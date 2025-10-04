@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高度な文字数カウントツール</title>
+    <title>文字数カウントツール</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,7 +11,7 @@
             background-color: #f4f4f9;
         }
         .container {
-            max-width: 900px; /* 2列表示のため幅を維持 */
+            max-width: 900px;
             margin: 0 auto;
             background-color: #fff;
             padding: 20px;
@@ -21,7 +21,19 @@
         h1 {
             color: #333;
             text-align: center;
+            margin-bottom: 5px; /* 説明文との間隔を調整 */
+        }
+        .info-box {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            padding: 15px;
             margin-bottom: 20px;
+            border-radius: 4px;
+            color: #1a629b;
+        }
+        .info-box p {
+            margin: 0 0 8px 0;
+            line-height: 1.6;
         }
         textarea {
             width: 100%;
@@ -63,7 +75,7 @@
         }
         .results-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr; /* 左右2列に分割 */
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
         .column {
@@ -84,7 +96,7 @@
         .result-item strong {
             display: inline-block;
             flex-shrink: 0;
-            width: 70%; /* ラベルの幅を調整 */
+            width: 70%;
             color: #007bff;
             padding-right: 10px;
             overflow: hidden; 
@@ -101,6 +113,18 @@
 
 <div class="container">
     <h1>文字数カウントツール 🧮</h1>
+
+    <div class="info-box">
+        <p>
+            安全性と機能
+        </p>
+        <p>
+            このツールは、すべての計算処理をブラウザ内のJavaScriptのみで完結させるため、入力した文字情報は、外部サーバーに一切送信されません。
+        </p>
+        <p>
+            また、入力内容はCookieなどのストレージにも保存されないため、ブラウザを再読み込みしたり、閉じたりすると、入力した文字は消えてしまいます。
+        </p>
+    </div>
 
     <div class="controls">
         <label for="exclude-chars">除外する文字：</label>
