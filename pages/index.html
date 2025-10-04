@@ -17,40 +17,35 @@
         }
         .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
         
-        /* 【重要追加】ツール選択時（.hide-list）はヘッダーの余白と影を削除し、完全にツール一覧画面を隠す */
-        .hide-list .header {
-            padding: 0 !important;
-            box-shadow: none !important;
-        }
-        
-        /* 1. 検索コンテナのスタイル */
-        .search-container { 
-            width: 90%; 
-            max-width: 600px; 
-            margin: 0 auto; 
-            display: flex; 
-            align-items: center; 
-            border: 1px solid #ddd; 
-            border-radius: 25px; 
-            padding: 8px 15px; 
+        /* 検索機能のCSSをここに追加/復元 */
+        .search-container {
+            width: 90%;
+            max-width: 600px;
+            margin: 0 auto 20px auto; /* 検索バーを中央に配置し、下にスペース */
+            display: flex;
+            align-items: center;
+            border: 2px solid #007bff;
+            border-radius: 25px;
+            overflow: hidden;
             background-color: #fff;
-            transition: box-shadow 0.2s;
         }
-        .search-container:focus-within {
-            box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+        .search-input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: none;
+            font-size: 16px;
+            outline: none;
         }
-        .search-input { 
-            border: none; 
-            outline: none; 
-            flex-grow: 1; 
-            padding: 5px 10px; 
-            font-size: 16px; 
+        .search-icon {
+            padding: 10px 15px;
+            color: #007bff;
+            cursor: pointer;
         }
-        .search-icon { 
-            color: #007bff; 
-            cursor: pointer; 
+        /* 検索バーをツール選択時（hide-list時）に非表示にするための設定 */
+        .hide-list .header {
+            display: none;
         }
-
+        /* --- 既存のCSSはここから --- */
         .main-content { width: 90%; max-width: 1200px; margin: 30px auto; padding: 20px; transition: opacity 0.3s; }
         .category-section { 
             background-color: #ffffff; 
@@ -59,7 +54,7 @@
             margin-bottom: 30px; 
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); 
         }
-        .category-hidden { display: none !important; }
+        .category-hidden { display: none; }
         .tool-card-hidden { display: none !important; }
         .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
         .tool-card { 
@@ -201,7 +196,6 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        /* ツール選択時に #tool-list 全体を非表示にする */
         .hide-list #tool-list { display: none; }
         .hide-list #selectedToolContainer { display: flex; }
         
@@ -212,7 +206,7 @@
     <div id="selectedToolContainer">
         <div id="selectedToolHeader">
             <div id="categoryTabs">
-            </div>
+                </div>
             
             <div id="actionButtons">
                 <div id="hideMenuButton" class="action-button">
@@ -238,8 +232,10 @@
     <div id="tool-list">
         <header class="header">
             <div class="search-container">
-                <span class="material-icons search-icon">search</span>
-                <input type="text" id="searchInput" class="search-input" placeholder="ツール名、キーワードなどで検索..." autocomplete="off">
+                <input type="text" id="searchInput" class="search-input" placeholder="ツール名、キーワード、かなで検索...">
+                <div class="search-icon">
+                    <span class="material-icons">search</span>
+                </div>
             </div>
         </header>
 
@@ -259,8 +255,10 @@
         const returnToTopButton = document.getElementById('returnToTopButton');
         const categoryTabsContainer = document.getElementById('categoryTabs');
         const menuList = document.getElementById('menuList');
-        const searchInput = document.getElementById('searchInput'); 
         const dynamicToolSections = document.getElementById('dynamicToolSections');
+
+        // 検索機能のためのDOM要素を取得
+        const searchInput = document.getElementById('searchInput');
 
         let currentToolId = '';
         let currentCategoryId = '';
@@ -272,8 +270,9 @@
             const card = document.createElement('a');
             card.href = '#';
             card.classList.add('tool-card', 'tool-select');
-            // 検索用のデータをdata属性に追加 (名前、説明、キーワード、カナを結合)
-            card.setAttribute('data-keywords', `${tool.name} ${tool.description} ${tool.keywords || ''} ${tool.kana || ''}`.toLowerCase()); 
+            // 検索のために data-keywords と data-kana を再設定
+            card.setAttribute('data-keywords', tool.keywords); 
+            card.setAttribute('data-kana', tool.kana); 
             card.setAttribute('data-url', tool.url);
             card.setAttribute('data-name', tool.name);
             card.setAttribute('data-id', tool.id);
@@ -307,13 +306,16 @@
         }
 
         function createToolSections() {
+            // コンテンツをクリアして再生成を防止
             dynamicToolSections.innerHTML = '';
             categoryTabsContainer.innerHTML = '';
 
             allCategoriesData.forEach(category => {
+                // 1. カテゴリセクションの生成
                 const section = document.createElement('section');
                 section.classList.add('category-section');
                 section.id = category.id;
+                // data-category-nameにはアイコンを含めたカテゴリ名をそのまま使用
                 section.setAttribute('data-category-name', category.name); 
 
                 section.innerHTML = `
@@ -323,14 +325,17 @@
                 
                 const toolGrid = section.querySelector('.tool-grid');
                 
+                // 2. ツールカードの生成
                 category.tools.forEach(tool => {
                     toolGrid.appendChild(createToolCard(tool, category.id));
                 });
 
                 dynamicToolSections.appendChild(section);
 
+                // 3. 上部カテゴリタブの生成
                 const tab = document.createElement('div');
                 tab.classList.add('category-tab');
+                // カテゴリタブのテキストもアイコンを含めたカテゴリ名をそのまま使用
                 tab.textContent = category.name; 
                 tab.setAttribute('data-category-id', category.id);
                 
@@ -344,19 +349,21 @@
         // 初回ロード時に動的生成を実行
         createToolSections();
         
-        let toolCards = document.querySelectorAll('.tool-select'); 
+        // 再度DOM要素を取得し直す
+        const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
         
-        // --- ツール選択時の処理 ---
+        // --- ツール選択時の処理 (ロジックは変更なし) ---
         function selectTool(url, name, categoryId, toolId) {
             currentToolId = toolId;
             
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
-            document.body.classList.add('hide-list'); // <body>にクラスを追加し、#tool-list（検索欄を含む）を非表示にする
+            document.body.classList.add('hide-list');
             
+            // メニューを必ず表示状態に戻す
             selectedToolContainer.classList.remove('menu-hidden');
             
             selectedToolContainer.classList.remove('dropdown-open');
@@ -364,7 +371,7 @@
             currentCategoryId = '';
         }
 
-        // --- ドロップダウンメニューの更新 (変更なし) ---
+        // --- ドロップダウンメニューの更新 (データ参照に変更) ---
         function updateDropdownMenu(categoryId) {
             const categoryData = allCategoriesData.find(cat => cat.id === categoryId);
             menuList.innerHTML = ''; 
@@ -406,6 +413,7 @@
                 currentCategoryId = '';
             } else {
                 selectedToolContainer.classList.add('dropdown-open');
+                // DOMから正しいタブ要素を取得
                 const selectedTab = document.querySelector(`.category-tab[data-category-id="${categoryId}"]`);
                 if (selectedTab) {
                     selectedTab.classList.add('active');
@@ -415,27 +423,26 @@
             }
         }
         
-        // --- 最初のメニューに戻るボタンの機能 ---
+        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (検索クリア処理を復元) ---
         returnToTopButton.addEventListener('click', function() {
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
             if (confirmation) {
                 selectedToolContainer.style.display = 'none';
                 selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
-                document.body.classList.remove('hide-list'); // <body>からクラスを削除し、#tool-list（検索欄を含む）を表示に戻す
+                document.body.classList.remove('hide-list');
                 toolContent.src = 'about:blank'; 
                 currentToolId = '';
                 currentCategoryId = '';
                 categoryTabs.forEach(tab => tab.classList.remove('active'));
                 
-                // 検索結果をクリアしてすべて表示状態に戻す
+                // 検索をクリアして再表示
                 searchInput.value = ''; 
-                sections.forEach(s => s.classList.remove('category-hidden'));
-                document.querySelectorAll('.tool-card-hidden').forEach(c => c.classList.remove('tool-card-hidden'));
+                filterTools(''); // 検索をクリア
             }
         });
         
-        // --- その他のボタン・イベントリスナー (変更なし) ---
+        // --- 1. メニューをしまうボタンの機能 (変更なし) ---
         hideMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.add('menu-hidden');
             selectedToolContainer.classList.remove('dropdown-open');
@@ -443,10 +450,12 @@
             currentCategoryId = '';
         });
 
+        // --- 2. メニューを出すボタンの機能 (変更なし) ---
         showMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.remove('menu-hidden');
         });
 
+        // --- ドロップダウン外のタップで閉じる処理 (変更なし) ---
         selectedToolContainer.addEventListener('click', function(e) {
             const isClickInsideDropdown = e.target.closest('#menuList') || e.target.closest('.category-tab');
             const isClickOnActionButtons = e.target.closest('#actionButtons');
@@ -459,41 +468,71 @@
                 }
             }
         });
-
-        // --- 検索機能のロジック (変更なし) ---
+        
+        // ===================================
+        // 検索機能のロジックを再実装
+        // ===================================
+        
+        // ひらがなをカタカナに変換する関数（検索精度向上のため）
         function normalizeKana(str) {
+            if (!str) return '';
             return str.replace(/[\u30a1-\u30f6]/g, function(match) {
                 return String.fromCharCode(match.charCodeAt(0) - 0x60);
+            }).replace(/[\u3041-\u3096]/g, function(match) {
+                // ひらがなをカタカナに変換
+                return String.fromCharCode(match.charCodeAt(0) + 0x60);
             });
         }
-
-        searchInput.addEventListener('keyup', function() {
-            const query = normalizeKana(this.value.trim().toLowerCase());
-            let foundToolsInCategories = new Set();
-
-            toolCards.forEach(card => {
-                const keywords = card.getAttribute('data-keywords');
-                const cardCategory = card.closest('.category-section');
-
-                if (query === '' || keywords.includes(query)) {
-                    card.classList.remove('tool-card-hidden');
-                    if (cardCategory) {
-                        foundToolsInCategories.add(cardCategory.id);
-                    }
-                } else {
-                    card.classList.add('tool-card-hidden');
-                }
-            });
+        
+        // ツールをフィルタリングする関数
+        function filterTools(query) {
+            const normalizedQuery = normalizeKana(query.toLowerCase().trim());
 
             sections.forEach(section => {
-                if (query === '' || foundToolsInCategories.has(section.id)) {
+                let categoryHasVisibleTools = false;
+                const toolGrid = section.querySelector('.tool-grid');
+                const toolCardsInSection = toolGrid.querySelectorAll('.tool-card');
+                
+                toolCardsInSection.forEach(card => {
+                    const toolName = card.getAttribute('data-name').toLowerCase();
+                    const toolKeywords = card.getAttribute('data-keywords').toLowerCase();
+                    const toolKana = card.getAttribute('data-kana').toLowerCase();
+                    
+                    let isMatch = false;
+                    
+                    if (normalizedQuery.length === 0) {
+                        isMatch = true; // クエリが空ならすべて表示
+                    } else {
+                        // ツール名、キーワード、かな（カタカナ変換済み）で検索
+                        if (toolName.includes(normalizedQuery) || 
+                            toolKeywords.includes(normalizedQuery) || 
+                            toolKana.includes(normalizedQuery)) {
+                            isMatch = true;
+                        }
+                    }
+
+                    if (isMatch) {
+                        card.classList.remove('tool-card-hidden');
+                        categoryHasVisibleTools = true;
+                    } else {
+                        card.classList.add('tool-card-hidden');
+                    }
+                });
+
+                // ツールがないカテゴリ全体を非表示/表示
+                if (categoryHasVisibleTools) {
                     section.classList.remove('category-hidden');
                 } else {
                     section.classList.add('category-hidden');
                 }
             });
+        }
+
+        // 検索入力時のイベントリスナー
+        searchInput.addEventListener('keyup', function() {
+            filterTools(this.value);
         });
-        
+
     </script>
 
 </body>
