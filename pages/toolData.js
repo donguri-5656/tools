@@ -26,7 +26,7 @@ const allToolData = [
         name: '🕹️ ゲーム＆エンタメ',
         tools: [
             { id: 'game-othello', name: 'オセロ', url: '/games/othello.html', description: 'コンピューターまたは友達と対戦。', keywords: 'オセロ リバーシ ゲーム 対戦 ボード', kana: 'おせろりばーし' },
-            { id: 'game-tetris', name: 'テトリス', url: 'https://donguri5656.f5.si/menu4', description: '定番のブロックパズルゲーム。', keywords: 'テトリス パズル ブロック ゲーム', kana: 'てとるすぱずる' },
+            { id: 'game-tetris', name: 'テトリス', url: 'https://donguri-5656.github.io/donguri/docs/menu4.html', description: '定番のブロックパズルゲーム。', keywords: 'テトリス パズル ブロック ゲーム', kana: 'てとるすぱずる' },
             { id: 'game-3dmaze', name: '3D迷路', url: '/games/3dmaze.html', description: '一人称視点で出口を探す立体迷路。', keywords: '3D 迷路 メイズ ゲーム 立体', kana: 'すりーでーめいろめいろ' },
             { id: 'game-janken', name: 'じゃんけん', url: '/games/janken.html', description: 'シンプルなオンラインじゃんけんゲーム。', keywords: 'じゃんけん 運試し ゲーム', kana: 'じゃんけんうんたなめし' }
         ]
