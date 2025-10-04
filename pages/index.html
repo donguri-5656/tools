@@ -15,7 +15,6 @@
             color: #333;
             overflow-x: hidden;
         }
-        /* ★重要: ヘッダーはtool-listの中に含められています */
         .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
         .search-container { width: 90%; max-width: 600px; margin: 0 auto; position: relative; }
         .search-input { width: 100%; padding: 12px 40px 12px 15px; border: 2px solid #dc3545; border-radius: 30px; font-size: 16px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
@@ -170,8 +169,18 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        /* ★修正点: hide-listクラスが付与されている時、ツール一覧 (#tool-list) 全体を非表示にする */
-        .hide-list #tool-list { display: none; }
+        /* ★重要修正箇所 */
+        .hide-list #tool-list { 
+            display: none; 
+            /* 親要素を非表示にする設定はこれでOKですが、 */
+            /* 念のため子要素のヘッダーも確実に非表示にします */
+        }
+        
+        /* ★追加修正箇所: hide-list時にはヘッダー全体を隠す */
+        .hide-list .header {
+            display: none;
+        }
+
         .hide-list #selectedToolContainer { display: flex; }
         
     </style>
@@ -234,8 +243,9 @@
         let currentToolId = '';
         let currentCategoryId = '';
 
-        // 外部ファイルから読み込まれたallToolDataを使用
-        const allCategoriesData = allToolData; 
+        // 外部ファイルから読み込まれたallToolDataを使用 (toolData.jsが必要です)
+        // 仮にデータがない場合のエラーを避けるため、存在チェックを追加
+        const allCategoriesData = typeof allToolData !== 'undefined' ? allToolData : []; 
 
         function createToolCard(tool, categoryId) {
             const card = document.createElement('a');
@@ -324,7 +334,6 @@
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
-            // ★重要修正点: bodyにhide-listクラスを付けることで、CSSが#tool-list全体を非表示にします。
             document.body.classList.add('hide-list'); 
             
             selectedToolContainer.classList.remove('menu-hidden');
@@ -390,7 +399,6 @@
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
             if (confirmation) {
-                // ★重要修正点: bodyからhide-listクラスを外し、ツール一覧を再表示
                 selectedToolContainer.style.display = 'none';
                 selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
                 document.body.classList.remove('hide-list'); 
