@@ -16,9 +16,7 @@
             overflow-x: hidden;
         }
         .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
-        .search-container { width: 90%; max-width: 600px; margin: 0 auto; position: relative; }
-        .search-input { width: 100%; padding: 12px 40px 12px 15px; border: 2px solid #dc3545; border-radius: 30px; font-size: 16px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
-        .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #dc3545; font-size: 24px; }
+        /* .search-container, .search-input, .search-icon は削除 */
         .main-content { width: 90%; max-width: 1200px; margin: 30px auto; padding: 20px; transition: opacity 0.3s; }
         .category-section { 
             background-color: #ffffff; 
@@ -169,18 +167,7 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        /* ------------------------------------------- */
-        /* ★検索欄非表示の確実な修正 */
-        /* ツール選択時、検索欄を含むヘッダー全体を非表示にする */
-        .hide-list .header {
-            display: none; 
-        }
-
-        /* ツール選択時、ツール一覧全体も非表示にする */
-        .hide-list #tool-list { 
-            display: none; 
-        }
-        /* ------------------------------------------- */
+        .hide-list #tool-list { display: none; }
         .hide-list #selectedToolContainer { display: flex; }
         
     </style>
@@ -190,7 +177,7 @@
     <div id="selectedToolContainer">
         <div id="selectedToolHeader">
             <div id="categoryTabs">
-            </div>
+                </div>
             
             <div id="actionButtons">
                 <div id="hideMenuButton" class="action-button">
@@ -216,8 +203,7 @@
     <div id="tool-list">
         <header class="header">
             <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="ツールの名前や機能で検索 (例: 文字数, テトリス)">
-                <span class="material-icons search-icon">search</span>
+                
             </div>
         </header>
 
@@ -237,7 +223,7 @@
         const returnToTopButton = document.getElementById('returnToTopButton');
         const categoryTabsContainer = document.getElementById('categoryTabs');
         const menuList = document.getElementById('menuList');
-        const searchInput = document.getElementById('searchInput');
+        // const searchInput = document.getElementById('searchInput'); // 削除
         const dynamicToolSections = document.getElementById('dynamicToolSections');
 
         let currentToolId = '';
@@ -250,8 +236,8 @@
             const card = document.createElement('a');
             card.href = '#';
             card.classList.add('tool-card', 'tool-select');
-            card.setAttribute('data-keywords', tool.keywords);
-            card.setAttribute('data-kana', tool.kana);
+            // card.setAttribute('data-keywords', tool.keywords); // 削除
+            // card.setAttribute('data-kana', tool.kana); // 削除
             card.setAttribute('data-url', tool.url);
             card.setAttribute('data-name', tool.name);
             card.setAttribute('data-id', tool.id);
@@ -294,7 +280,7 @@
                 const section = document.createElement('section');
                 section.classList.add('category-section');
                 section.id = category.id;
-                // ★修正箇所1: data-category-nameにはアイコンを含めたカテゴリ名をそのまま使用
+                // data-category-nameにはアイコンを含めたカテゴリ名をそのまま使用
                 section.setAttribute('data-category-name', category.name); 
 
                 section.innerHTML = `
@@ -314,7 +300,7 @@
                 // 3. 上部カテゴリタブの生成
                 const tab = document.createElement('div');
                 tab.classList.add('category-tab');
-                // ★修正箇所2: カテゴリタブのテキストもアイコンを含めたカテゴリ名をそのまま使用
+                // カテゴリタブのテキストもアイコンを含めたカテゴリ名をそのまま使用
                 tab.textContent = category.name; 
                 tab.setAttribute('data-category-id', category.id);
                 
@@ -329,7 +315,6 @@
         createToolSections();
         
         // 再度DOM要素を取得し直す
-        // ★修正箇所3: スクリプトの実行順により、ここで再取得が必要
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
@@ -403,7 +388,7 @@
             }
         }
         
-        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (変更なし) ---
+        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (検索クリア処理を削除) ---
         returnToTopButton.addEventListener('click', function() {
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
@@ -416,7 +401,7 @@
                 currentCategoryId = '';
                 categoryTabs.forEach(tab => tab.classList.remove('active'));
                 
-                searchInput.value = '';
+                // searchInput.value = ''; // 削除
                 sections.forEach(s => s.classList.remove('category-hidden'));
                 document.querySelectorAll('.tool-card-hidden').forEach(c => c.classList.remove('tool-card-hidden'));
             }
@@ -449,63 +434,11 @@
             }
         });
 
-        // --- 検索機能 (変更なし) ---
-        function normalizeKana(str) {
-            if (!str) return '';
-            str = str.replace(/[\u30a1-\u30f6]/g, function(match) {
-                return String.fromCharCode(match.charCodeAt(0) - 0x60);
-            });
-            return str;
-        }
-
-        searchInput.addEventListener('keyup', function() {
-            // bodyに.hide-listが付いていたら処理を中断
-            if (document.body.classList.contains('hide-list')) return;
-
-            const rawQuery = this.value.toLowerCase().trim();
-            const normalizedQuery = normalizeKana(rawQuery);
-            
-            sections.forEach(section => {
-                let sectionHasVisibleCard = false;
-                const toolCardsInSearch = section.querySelectorAll('.tool-card');
-                
-                toolCardsInSearch.forEach(card => {
-                    const name = card.querySelector('.tool-name').textContent.toLowerCase();
-                    const keywords = card.getAttribute('data-keywords') ? card.getAttribute('data-keywords').toLowerCase() : '';
-                    const kanaKeywords = card.getAttribute('data-kana') ? card.getAttribute('data-kana').toLowerCase() : '';
-
-                    let isMatch = false;
-                    
-                    if (rawQuery.length === 0) {
-                        isMatch = true;
-                    } else {
-                        if (name.includes(rawQuery) || keywords.includes(rawQuery)) {
-                            isMatch = true;
-                        }
-                        if (!isMatch && normalizedQuery.length > 0) {
-                            if (kanaKeywords.includes(normalizedQuery)) {
-                                isMatch = true;
-                            }
-                        }
-                    }
-
-                    if (isMatch) {
-                        card.classList.remove('tool-card-hidden');
-                        sectionHasVisibleCard = true;
-                    } else {
-                        card.classList.add('tool-card-hidden');
-                    }
-                });
-
-                if (rawQuery.length === 0) {
-                    section.classList.remove('category-hidden');
-                } else if (!sectionHasVisibleCard) {
-                    section.classList.add('category-hidden');
-                } else {
-                    section.classList.remove('category-hidden');
-                }
-            });
-        });
+        // --- 検索機能の関連コードをすべて削除 ---
+        /*
+        function normalizeKana(str) { ... }
+        searchInput.addEventListener('keyup', function() { ... });
+        */
     </script>
 
 </body>
