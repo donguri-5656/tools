@@ -15,13 +15,12 @@
             color: #333;
             overflow-x: hidden;
         }
+        .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
         
-        /* 【修正点1】headerからbox-shadowと目立つ背景色を削除し、背景色をbodyと同じにする */
-        .header { 
-            background-color: #f4f7f9; /* bodyと同じ背景色 */
-            padding: 20px 0; 
-            box-shadow: none; /* 影を削除 */
-            text-align: center; 
+        /* 【重要追加】ツール選択時（.hide-list）はヘッダーの余白と影を削除し、完全にツール一覧画面を隠す */
+        .hide-list .header {
+            padding: 0 !important;
+            box-shadow: none !important;
         }
         
         /* 1. 検索コンテナのスタイル */
@@ -34,8 +33,7 @@
             border: 1px solid #ddd; 
             border-radius: 25px; 
             padding: 8px 15px; 
-            background-color: #fff; /* 検索ボックスに白い背景 */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* 検索ボックスに影を移動 */
+            background-color: #fff;
             transition: box-shadow 0.2s;
         }
         .search-container:focus-within {
@@ -203,7 +201,7 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        /* ツール選択時に #tool-list 全体（ヘッダーとメインコンテンツ）を非表示にする */
+        /* ツール選択時に #tool-list 全体を非表示にする */
         .hide-list #tool-list { display: none; }
         .hide-list #selectedToolContainer { display: flex; }
         
