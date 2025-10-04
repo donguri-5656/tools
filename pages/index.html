@@ -15,7 +15,6 @@
             color: #333;
             overflow-x: hidden;
         }
-        /* ツール一覧表示時のスタイル (省略) */
         .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
         .search-container { width: 90%; max-width: 600px; margin: 0 auto; position: relative; }
         .search-input { width: 100%; padding: 12px 40px 12px 15px; border: 2px solid #dc3545; border-radius: 30px; font-size: 16px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
@@ -27,11 +26,10 @@
         .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
         .tool-card { background-color: #f7f9fc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; text-decoration: none; color: inherit; display: block; }
 
-
         /* 2. 選択されたツール表示エリア */
         #selectedToolContainer {
             position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background-color: #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-            display: none; flex-direction: column;
+            display: none; flex-direction: column; min-height: 100vh;
         }
         
         /* ヘッダーコンテナ（カテゴリタブとボタンを含む） */
@@ -41,12 +39,37 @@
             transform: translateY(0);
             transition: transform 0.3s, opacity 0.3s;
         }
+
+        /* カテゴリタブのスタイル */
+        #categoryTabs {
+            display: flex;
+            align-items: stretch;
+            flex-grow: 1;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .category-tab {
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            border-right: 1px solid #0056b3;
+        }
+        .category-tab:hover {
+            background-color: #0056b3;
+        }
+        .category-tab.active {
+            background-color: #0069d9;
+            font-weight: bold;
+        }
         
         /* メニュー非表示時 (上部に完全に隠す) */
         #selectedToolContainer.menu-hidden #selectedToolHeader {
-            transform: translateY(-50px); /* ヘッダーの高さ分上に移動 */
+            transform: translateY(-50px);
             opacity: 0;
-            pointer-events: none; /* クリックを無効化 */
+            pointer-events: none;
         }
         
         /* 3. アクションボタンのスタイル */
@@ -62,26 +85,39 @@
 
         /* 4. メニューを出すボタンのスタイルと位置 */
         #showMenuButton {
-            position: fixed; /* 画面に固定 */
+            position: fixed;
             top: 0;
-            right: 0; /* 右上に配置 */
-            z-index: 1002; /* ヘッダーより上に */
-            background-color: #dc3545; /* 強調色 */
+            right: 0;
+            z-index: 1002;
+            background-color: #dc3545;
             color: white;
             height: 50px;
-            display: none; /* 初期は非表示 */
+            display: none; /* ★修正ポイント1: ツール一覧表示時は非表示 */
             align-items: center;
             padding: 0 20px;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-            transition: background-color 0.2s;
+            transition: transform 0.3s, opacity 0.3s, background-color 0.2s;
+            /* 初期状態は画面外へ */
+            transform: translateX(100%); 
+            opacity: 0; 
+            pointer-events: none;
         }
+
+        /* ★修正ポイント2: ツール画面が表示されている時のみflexで表示待機 */
+        .hide-list #showMenuButton {
+            display: flex;
+        }
+
         #showMenuButton:hover {
             background-color: #c82333;
         }
-        /* menu-hidden時に再表示ボタンを表示 */
-        #selectedToolContainer.menu-hidden #showMenuButton {
-            display: flex;
+
+        /* ★修正ポイント3: menu-hidden時に再表示ボタンを画面内へ */
+        .hide-list #selectedToolContainer.menu-hidden ~ #showMenuButton {
+            transform: translateX(0); 
+            opacity: 1; 
+            pointer-events: auto;
         }
         
         /* 5. iFrameの調整 (変更なし) */
@@ -111,6 +147,7 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
+        /* ★修正ポイント4: bodyにhide-listクラスがある時、ツール画面を表示 */
         .hide-list #tool-list { display: none; }
         .hide-list #selectedToolContainer { display: flex; }
         
@@ -146,11 +183,7 @@
 
     <div id="tool-list">
         <header class="header">
-            <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="ツールの名前や機能で検索 (例: 文字数, テトリス)">
-                <span class="material-icons search-icon">search</span>
-            </div>
-        </header>
+            </header>
 
         <main class="main-content">
             <section class="category-section" id="category-util" data-category-name="計算・変換・日常ツール">
@@ -236,8 +269,8 @@
     <script>
         const selectedToolContainer = document.getElementById('selectedToolContainer');
         const toolContent = document.getElementById('toolContent');
-        const hideMenuButton = document.getElementById('hideMenuButton'); // メニューをしまうボタン
-        const showMenuButton = document.getElementById('showMenuButton'); // メニューを出すボタン (新設)
+        const hideMenuButton = document.getElementById('hideMenuButton'); 
+        const showMenuButton = document.getElementById('showMenuButton');
         const returnToTopButton = document.getElementById('returnToTopButton');
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabsContainer = document.getElementById('categoryTabs');
@@ -292,7 +325,7 @@
         // --- ドロップダウンメニューの更新 (変更なし) ---
         function updateDropdownMenu(categoryId) {
             const currentCategory = document.getElementById(categoryId);
-            const toolsInMenu = currentCategory.querySelectorAll('.tool-select');
+            const toolsInMenu = currentCategory.querySelectorAll('.tool-select:not(.tool-card-hidden)');
             menuList.innerHTML = ''; 
 
             toolsInMenu.forEach(tool => {
@@ -400,7 +433,7 @@
             }
         });
 
-        // --- 検索機能 (省略) ---
+        // --- 検索機能 (変更なし) ---
         function normalizeKana(str) {
             if (!str) return '';
             str = str.replace(/[\u30a1-\u30f6]/g, function(match) {
