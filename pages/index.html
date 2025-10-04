@@ -6,7 +6,7 @@
     <title>多機能オンラインツール＆ゲーム集</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* CSS部分は変更なし */
+        /* CSS部分は変更なし (検索欄のレイアウトに関する部分のみ確認) */
         body {
             font-family: 'Arial', 'Helvetica', 'sans-serif', 'Material Icons';
             margin: 0;
@@ -15,6 +15,7 @@
             color: #333;
             overflow-x: hidden;
         }
+        /* headerが#tool-listの中に移動しても、スタイルは維持される */
         .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
         .search-container { width: 90%; max-width: 600px; margin: 0 auto; position: relative; }
         .search-input { width: 100%; padding: 12px 40px 12px 15px; border: 2px solid #dc3545; border-radius: 30px; font-size: 16px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
@@ -169,19 +170,9 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        /* ★★★ 修正箇所 ★★★ */
-        /* bodyにhide-listクラスがある時、#tool-list全体を非表示にする */
-        .hide-list #tool-list { 
-            display: none; 
-        }
-        .hide-list #selectedToolContainer { 
-            display: flex; 
-        }
-        /* 以前のコードでは.hide-list #tool-listの指定があったため、これが#tool-list全体を隠すべきでした。 */
-        /* もしこの指定で検索欄が残る場合、検索欄が#tool-listの外にあるか、HTMLの構造が想定外です。 */
-        /* HTML構造を確認したところ、#tool-listで全体を囲んでいるため、上記で十分なはずです。 */
-        /* 念のため、検索入力欄を囲む.headerも#tool-listに含まれていることを確認してください。 */
-        /* (今回のHTMLでは.headerは#tool-listの中にあります。) */
+        /* ツール一覧全体を非表示にする設定 */
+        .hide-list #tool-list { display: none; }
+        .hide-list #selectedToolContainer { display: flex; }
         
     </style>
 </head>
@@ -230,7 +221,6 @@
     <script src="toolData.js"></script>
 
     <script>
-        // ... (JavaScriptコードは変更なし。前回のコードを使用してください。)
         const selectedToolContainer = document.getElementById('selectedToolContainer');
         const toolContent = document.getElementById('toolContent');
         const hideMenuButton = document.getElementById('hideMenuButton'); 
@@ -245,7 +235,7 @@
         let currentCategoryId = '';
 
         // 外部ファイルから読み込まれたallToolDataを使用
-        // ※このスクリプトを実行する前に、toolData.jsが読み込まれている必要があります。
+        // (toolData.jsが別途用意されている前提)
         const allCategoriesData = typeof allToolData !== 'undefined' ? allToolData : []; 
 
         function createToolCard(tool, categoryId) {
@@ -287,10 +277,12 @@
         }
 
         function createToolSections() {
+            // コンテンツをクリアして再生成を防止
             dynamicToolSections.innerHTML = '';
             categoryTabsContainer.innerHTML = '';
 
             allCategoriesData.forEach(category => {
+                // 1. カテゴリセクションの生成
                 const section = document.createElement('section');
                 section.classList.add('category-section');
                 section.id = category.id;
@@ -303,12 +295,14 @@
                 
                 const toolGrid = section.querySelector('.tool-grid');
                 
+                // 2. ツールカードの生成
                 category.tools.forEach(tool => {
                     toolGrid.appendChild(createToolCard(tool, category.id));
                 });
 
                 dynamicToolSections.appendChild(section);
 
+                // 3. 上部カテゴリタブの生成
                 const tab = document.createElement('div');
                 tab.classList.add('category-tab');
                 tab.textContent = category.name; 
@@ -321,19 +315,23 @@
             });
         }
         
+        // 初回ロード時に動的生成を実行
         createToolSections();
         
+        // 再度DOM要素を取得し直す (動的生成後に要素の参照を更新)
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
         
+        // --- ツール選択時の処理 ---
         function selectTool(url, name, categoryId, toolId) {
             currentToolId = toolId;
             
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
-            document.body.classList.add('hide-list');
+            // bodyにhide-listクラスを付与することで、CSSが#tool-listをdisplay: noneにします
+            document.body.classList.add('hide-list'); 
             
             selectedToolContainer.classList.remove('menu-hidden');
             
@@ -342,6 +340,7 @@
             currentCategoryId = '';
         }
 
+        // --- ドロップダウンメニューの更新 (変更なし) ---
         function updateDropdownMenu(categoryId) {
             const categoryData = allCategoriesData.find(cat => cat.id === categoryId);
             menuList.innerHTML = ''; 
@@ -371,6 +370,7 @@
             }
         }
 
+        // --- ドロップダウンの開閉処理 (変更なし) ---
         function toggleDropdown(categoryId) {
             const isCurrentlyOpen = selectedToolContainer.classList.contains('dropdown-open');
             const isSameCategory = currentCategoryId === categoryId && isCurrentlyOpen;
@@ -391,6 +391,7 @@
             }
         }
         
+        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (変更なし) ---
         returnToTopButton.addEventListener('click', function() {
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
@@ -409,6 +410,7 @@
             }
         });
         
+        // --- 1. メニューをしまうボタンの機能 (変更なし) ---
         hideMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.add('menu-hidden');
             selectedToolContainer.classList.remove('dropdown-open');
@@ -416,10 +418,12 @@
             currentCategoryId = '';
         });
 
+        // --- 2. メニューを出すボタンの機能 (変更なし) ---
         showMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.remove('menu-hidden');
         });
 
+        // --- ドロップダウン外のタップで閉じる処理 (変更なし) ---
         selectedToolContainer.addEventListener('click', function(e) {
             const isClickInsideDropdown = e.target.closest('#menuList') || e.target.closest('.category-tab');
             const isClickOnActionButtons = e.target.closest('#actionButtons');
@@ -433,6 +437,7 @@
             }
         });
 
+        // --- 検索機能 (変更なし) ---
         function normalizeKana(str) {
             if (!str) return '';
             str = str.replace(/[\u30a1-\u30f6]/g, function(match) {
