@@ -1,1 +1,463 @@
-a
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多機能オンラインツール＆ゲーム集</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* 1. 基本設定 (変更なし) */
+        body {
+            font-family: 'Arial', 'Helvetica', 'sans-serif', 'Material Icons';
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f9;
+            color: #333;
+            overflow-x: hidden;
+        }
+        /* ツール一覧表示時のスタイル (省略) */
+        .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
+        .search-container { width: 90%; max-width: 600px; margin: 0 auto; position: relative; }
+        .search-input { width: 100%; padding: 12px 40px 12px 15px; border: 2px solid #dc3545; border-radius: 30px; font-size: 16px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #dc3545; font-size: 24px; }
+        .main-content { width: 90%; max-width: 1200px; margin: 30px auto; padding: 20px; transition: opacity 0.3s; }
+        .category-section { background-color: #ffffff; border-radius: 12px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); }
+        .category-hidden { display: none; }
+        .tool-card-hidden { display: none !important; }
+        .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
+        .tool-card { background-color: #f7f9fc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; text-decoration: none; color: inherit; display: block; }
+
+
+        /* 2. 選択されたツール表示エリア */
+        #selectedToolContainer {
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background-color: #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            display: none; flex-direction: column;
+        }
+        
+        /* ヘッダーコンテナ（カテゴリタブとボタンを含む） */
+        #selectedToolHeader {
+            display: flex; justify-content: space-between; align-items: stretch; padding: 0 20px 0 0; background-color: #007bff;
+            color: white; position: relative; height: 50px;
+            transform: translateY(0);
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        
+        /* メニュー非表示時 (上部に完全に隠す) */
+        #selectedToolContainer.menu-hidden #selectedToolHeader {
+            transform: translateY(-50px); /* ヘッダーの高さ分上に移動 */
+            opacity: 0;
+            pointer-events: none; /* クリックを無効化 */
+        }
+        
+        /* 3. アクションボタンのスタイル */
+        #actionButtons {
+            display: flex; align-items: center; background-color: #0069d9; padding: 0 5px;
+        }
+        .action-button {
+            cursor: pointer; padding: 0 10px; height: 100%; display: flex; align-items: center; transition: background-color 0.2s;
+        }
+        .action-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 4. メニューを出すボタンのスタイルと位置 */
+        #showMenuButton {
+            position: fixed; /* 画面に固定 */
+            top: 0;
+            right: 0; /* 右上に配置 */
+            z-index: 1002; /* ヘッダーより上に */
+            background-color: #dc3545; /* 強調色 */
+            color: white;
+            height: 50px;
+            display: none; /* 初期は非表示 */
+            align-items: center;
+            padding: 0 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.2s;
+        }
+        #showMenuButton:hover {
+            background-color: #c82333;
+        }
+        /* menu-hidden時に再表示ボタンを表示 */
+        #selectedToolContainer.menu-hidden #showMenuButton {
+            display: flex;
+        }
+        
+        /* 5. iFrameの調整 (変更なし) */
+        #toolContent {
+            width: 100%;
+            border: none;
+            height: calc(100vh - 50px); 
+            transition: height 0.3s, margin-top 0.3s;
+        }
+        #selectedToolContainer.menu-hidden #toolContent {
+            height: 100vh;
+            margin-top: -50px; 
+        }
+
+        /* ドロップダウンメニュー (省略) */
+        #selectedToolContainer.menu-hidden #menuList { display: none; }
+        #menuList {
+            position: absolute; top: 50px; left: 0; width: 100%; background-color: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; z-index: 1001; display: block; padding: 0;
+        }
+        #selectedToolContainer.dropdown-open #menuList { max-height: 50vh; overflow-y: auto; }
+        .dropdown-tool-card {
+            text-decoration: none; color: #333; display: block; text-align: left; padding: 8px 15px; background-color: #fff;
+            font-size: 14px; transition: background-color 0.2s; border-bottom: 1px solid #eee;
+        }
+        .dropdown-tool-card.active-tool {
+            background-color: #e6f0ff; color: #007bff; font-weight: bold;
+        }
+        
+        .hide-list #tool-list { display: none; }
+        .hide-list #selectedToolContainer { display: flex; }
+        
+    </style>
+</head>
+<body>
+
+    <div id="selectedToolContainer">
+        <div id="selectedToolHeader">
+            <div id="categoryTabs">
+                </div>
+            
+            <div id="actionButtons">
+                <div id="hideMenuButton" class="action-button">
+                    <span class="material-icons">menu_open</span>
+                </div>
+                <div id="returnToTopButton" class="action-button">
+                    <span class="material-icons">home</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="menuList">
+            </div>
+
+        <iframe id="toolContent" title="Selected Tool Content"></iframe>
+    </div>
+    
+    <div id="showMenuButton">
+        <span class="material-icons">menu</span>
+    </div>
+
+
+    <div id="tool-list">
+        <header class="header">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="ツールの名前や機能で検索 (例: 文字数, テトリス)">
+                <span class="material-icons search-icon">search</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="category-section" id="category-util" data-category-name="計算・変換・日常ツール">
+                <h2 class="category-title">🔢 計算・変換・日常ツール</h2>
+                <div class="tool-grid">
+                    <a href="#" class="tool-card tool-select" data-keywords="文字数 カウント 文章 測定" data-kana="もじすうかうんといもじすう" data-url="/tools/moji.html" data-name="文字数カウント" data-id="tool-moji">
+                        <span class="material-icons tool-icon">text_format</span>
+                        <div class="tool-name">文字数カウント</div>
+                        <div class="tool-description">文章の文字数、単語数を瞬時に測定。</div>
+                    </a>
+                    <a href="#" class="tool-card tool-select" data-keywords="QRコード 生成 作成 リンク URL" data-kana="きゅーあーるこーどきゅーあーる" data-url="/tools/qr.html" data-name="QRコード生成" data-id="tool-qr">
+                        <span class="material-icons tool-icon">qr_code</span>
+                        <div class="tool-name">QRコード生成</div>
+                        <div class="tool-description">URLやテキストからQRコードを作成。</div>
+                    </a>
+                    <a href="#" class="tool-card tool-select" data-keywords="パスワード 生成 作成 セキュリティ 鍵" data-kana="ぱすわーどせいせいぱすわーど" data-url="/tools/pass.html" data-name="パスワード生成" data-id="tool-pass">
+                        <span class="material-icons tool-icon">vpn_key</span>
+                        <div class="tool-name">パスワード生成</div>
+                        <div class="tool-description">強力で安全なパスワードを自動生成。</div>
+                    </a>
+                    <a href="#" class="tool-card tool-select" data-keywords="単位 変換 計算 長さ 重さ 温度" data-kana="たんいへんかんつーるたんいへんかん" data-url="/tools/unit.html" data-name="単位変換ツール" data-id="tool-unit">
+                        <span class="material-icons tool-icon">calculate</span>
+                        <div class="tool-name">単位変換ツール</div>
+                        <div class="tool-description">長さ、重さ、温度などの単位を相互変換。</div>
+                    </a>
+                </div>
+            </section>
+
+            <section class="category-section" id="category-design" data-category-name="画像・デザイン・クリエイティブ">
+                <h2 class="category-title">🎨 画像・デザイン・クリエイティブ</h2>
+                <div class="tool-grid">
+                    <a href="#" class="tool-card tool-select" data-keywords="カラーピッカー 色 コード HEX RGB デザイン" data-kana="からーぴっかーからー" data-url="/tools/color.html" data-name="カラーピッカー" data-id="tool-color">
+                        <span class="material-icons tool-icon">palette</span>
+                        <div class="tool-name">カラーピッカー</div>
+                        <div class="tool-description">画面上の色やコードから色を選択・変換。</div>
+                    </a>
+                    <a href="#" class="tool-card tool-select" data-keywords="画像 サイズ 変更 リサイズ 縮小" data-kana="がぞうさいずへんこうがぞう" data-url="/tools/resize.html" data-name="画像サイズ変更" data-id="tool-resize">
+                        <span class="material-icons tool-icon">crop</span>
+                        <div class="tool-name">画像サイズ変更</div>
+                        <div class="tool-description">画像の縦横比を維持してリサイズ。</div>
+                    </a>
+                    <a href="#" class="tool-card tool-select" data-keywords="PDF 結合 分割 ファイル 編集" data-kana="ぴーでぃーえふけつごうぶんかつぴーでぃーえふ" data-url="/tools/pdf.html" data-name="PDF結合・分割" data-id="tool-pdf">
+                        <span class="material-icons tool-icon">file_copy</span>
+                        <div class="tool-name">PDF結合・分割</div>
+                        <div class="tool-description">複数のPDFファイルをまとめたり、分割したり。</div>
+                    </a>
+                    <a href="#" class="tool-card tool-select" data-keywords="背景 透過 処理 削除 写真" data-kana="はいけいとうかしょりはけい" data-url="/tools/bgremove.html" data-name="背景透過処理" data-id="tool-bgremove">
+                        <span class="material-icons tool-icon">photo_filter</span>
+                        <div class="tool-name">背景透過処理</div>
+                        <div class="tool-description">写真から背景を自動で削除。</div>
+                    </a>
+                </div>
+            </section>
+
+            <section class="category-section" id="category-game" data-category-name="ゲーム＆エンタメ">
+                <h2 class="category-title game-title">🕹️ ゲーム＆エンタメ</h2>
+                <div class="tool-grid">
+                    <a href="#" class="tool-card game-card tool-select" data-keywords="オセロ リバーシ ゲーム 対戦 ボード" data-kana="おせろりばーし" data-url="/games/othello.html" data-name="オセロ" data-id="game-othello">
+                        <span class="material-icons tool-icon">fiber_manual_record</span>
+                        <div class="tool-name">オセロ</div>
+                        <div class="tool-description">コンピューターまたは友達と対戦。</div>
+                    </a>
+                    <a href="#" class="tool-card game-card tool-select" data-keywords="テトリス パズル ブロック ゲーム" data-kana="てとるすぱずる" data-url="https://donguri5656.f5.si/menu4" data-name="テトリス" data-id="game-tetris">
+                        <span class="material-icons tool-icon">apps</span>
+                        <div class="tool-name">テトリス</div>
+                        <div class="tool-description">定番のブロックパズルゲーム。</div>
+                    </a>
+                    <a href="#" class="tool-card game-card tool-select" data-keywords="3D 迷路 メイズ ゲーム 立体" data-kana="すりーでーめいろめいろ" data-url="/games/3dmaze.html" data-name="3D迷路" data-id="game-3dmaze">
+                        <span class="material-icons tool-icon">explore</span>
+                        <div class="tool-name">3D迷路</div>
+                        <div class="tool-description">一人称視点で出口を探す立体迷路。</div>
+                    </a>
+                    <a href="#" class="tool-card game-card tool-select" data-keywords="じゃんけん 運試し ゲーム" data-kana="じゃんけんうんたなめし" data-url="/games/janken.html" data-name="じゃんけん" data-id="game-janken">
+                        <span class="material-icons tool-icon">pan_tool</span>
+                        <div class="tool-name">じゃんけん</div>
+                        <div class="tool-description">シンプルなオンラインじゃんけんゲーム。</div>
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const selectedToolContainer = document.getElementById('selectedToolContainer');
+        const toolContent = document.getElementById('toolContent');
+        const hideMenuButton = document.getElementById('hideMenuButton'); // メニューをしまうボタン
+        const showMenuButton = document.getElementById('showMenuButton'); // メニューを出すボタン (新設)
+        const returnToTopButton = document.getElementById('returnToTopButton');
+        const toolCards = document.querySelectorAll('.tool-select');
+        const categoryTabsContainer = document.getElementById('categoryTabs');
+        const menuList = document.getElementById('menuList');
+        const sections = document.querySelectorAll('.category-section');
+        const searchInput = document.getElementById('searchInput');
+
+        let currentToolId = '';
+        let currentCategoryId = '';
+
+        // --- 初期化: 全カテゴリのタブを生成 (変更なし) ---
+        const allCategories = Array.from(sections).map(section => ({
+            id: section.id,
+            name: section.getAttribute('data-category-name')
+        }));
+        
+        allCategories.forEach(category => {
+            const tab = document.createElement('div');
+            tab.classList.add('category-tab');
+            tab.textContent = category.name;
+            tab.setAttribute('data-category-id', category.id);
+            
+            tab.addEventListener('click', function() {
+                toggleDropdown(category.id);
+            });
+            categoryTabsContainer.appendChild(tab);
+        });
+        
+        const categoryTabs = document.querySelectorAll('.category-tab');
+
+        // --- ドロップダウンの開閉処理 (変更なし) ---
+        function toggleDropdown(categoryId) {
+            const isCurrentlyOpen = selectedToolContainer.classList.contains('dropdown-open');
+            const isSameCategory = currentCategoryId === categoryId && isCurrentlyOpen;
+            
+            selectedToolContainer.classList.remove('dropdown-open');
+            categoryTabs.forEach(tab => tab.classList.remove('active'));
+            
+            if (isSameCategory) {
+                currentCategoryId = '';
+            } else {
+                selectedToolContainer.classList.add('dropdown-open');
+                const selectedTab = document.querySelector(`.category-tab[data-category-id="${categoryId}"]`);
+                if (selectedTab) {
+                    selectedTab.classList.add('active');
+                }
+                currentCategoryId = categoryId;
+                updateDropdownMenu(categoryId);
+            }
+        }
+
+        // --- ドロップダウンメニューの更新 (変更なし) ---
+        function updateDropdownMenu(categoryId) {
+            const currentCategory = document.getElementById(categoryId);
+            const toolsInMenu = currentCategory.querySelectorAll('.tool-select');
+            menuList.innerHTML = ''; 
+
+            toolsInMenu.forEach(tool => {
+                const name = tool.getAttribute('data-name');
+                const url = tool.getAttribute('data-url');
+                const id = tool.getAttribute('data-id');
+
+                const link = document.createElement('a');
+                link.href = '#';
+                link.textContent = name;
+                link.classList.add('dropdown-tool-card');
+                
+                if (id === currentToolId) {
+                    link.classList.add('active-tool');
+                }
+
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    selectTool(url, name, categoryId, id);
+                    selectedToolContainer.classList.remove('dropdown-open');
+                    categoryTabs.forEach(tab => tab.classList.remove('active'));
+                    currentCategoryId = '';
+                });
+                
+                menuList.appendChild(link);
+            });
+        }
+
+        // --- ツール選択時の処理 ---
+        function selectTool(url, name, categoryId, toolId) {
+            currentToolId = toolId;
+            
+            toolContent.src = url;
+
+            selectedToolContainer.style.display = 'flex';
+            document.body.classList.add('hide-list');
+            
+            // メニューを必ず表示状態に戻す
+            selectedToolContainer.classList.remove('menu-hidden');
+            
+            selectedToolContainer.classList.remove('dropdown-open');
+            categoryTabs.forEach(tab => tab.classList.remove('active'));
+            currentCategoryId = '';
+        }
+
+        toolCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('data-url');
+                const name = this.getAttribute('data-name');
+                const id = this.getAttribute('data-id');
+                const categoryId = this.closest('.category-section').id;
+                
+                if (url) {
+                    selectTool(url, name, categoryId, id);
+                }
+            });
+        });
+
+        // --- 1. メニューをしまうボタンの機能 (非表示にする) ---
+        hideMenuButton.addEventListener('click', function() {
+            // メニューを非表示にする
+            selectedToolContainer.classList.add('menu-hidden');
+            
+            // ドロップダウンも閉じる (誤操作防止)
+            selectedToolContainer.classList.remove('dropdown-open');
+            categoryTabs.forEach(tab => tab.classList.remove('active'));
+            currentCategoryId = '';
+        });
+
+        // --- 2. メニューを出すボタンの機能 (再表示する) ---
+        showMenuButton.addEventListener('click', function() {
+            // メニューを再表示する
+            selectedToolContainer.classList.remove('menu-hidden');
+        });
+
+
+        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (警告付き) ---
+        returnToTopButton.addEventListener('click', function() {
+            const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
+            
+            if (confirmation) {
+                // トップメニューに戻る
+                selectedToolContainer.style.display = 'none';
+                selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
+                document.body.classList.remove('hide-list');
+                toolContent.src = 'about:blank'; 
+                currentToolId = '';
+                currentCategoryId = '';
+                categoryTabs.forEach(tab => tab.classList.remove('active'));
+            }
+        });
+        
+        // --- ドロップダウン外のタップで閉じる処理 (変更なし) ---
+        selectedToolContainer.addEventListener('click', function(e) {
+            const isClickInsideDropdown = e.target.closest('#menuList') || e.target.closest('.category-tab');
+            const isClickOnActionButtons = e.target.closest('#actionButtons');
+            
+            if (!isClickInsideDropdown && !isClickOnActionButtons) {
+                if (selectedToolContainer.classList.contains('dropdown-open')) {
+                    selectedToolContainer.classList.remove('dropdown-open');
+                    categoryTabs.forEach(tab => tab.classList.remove('active'));
+                    currentCategoryId = '';
+                }
+            }
+        });
+
+        // --- 検索機能 (省略) ---
+        function normalizeKana(str) {
+            if (!str) return '';
+            str = str.replace(/[\u30a1-\u30f6]/g, function(match) {
+                return String.fromCharCode(match.charCodeAt(0) - 0x60);
+            });
+            return str;
+        }
+
+        searchInput.addEventListener('keyup', function() {
+            if (selectedToolContainer.style.display === 'flex') return;
+
+            const rawQuery = this.value.toLowerCase().trim();
+            const normalizedQuery = normalizeKana(rawQuery);
+            
+            sections.forEach(section => {
+                let sectionHasVisibleCard = false;
+                const toolCardsInSearch = section.querySelectorAll('.tool-card');
+                
+                toolCardsInSearch.forEach(card => {
+                    const name = card.querySelector('.tool-name').textContent.toLowerCase();
+                    const description = card.querySelector('.tool-description').textContent.toLowerCase();
+                    const keywords = card.getAttribute('data-keywords') ? card.getAttribute('data-keywords').toLowerCase() : '';
+                    const kanaKeywords = card.getAttribute('data-kana') ? card.getAttribute('data-kana').toLowerCase() : '';
+
+                    let isMatch = false;
+                    
+                    if (rawQuery.length === 0) {
+                        isMatch = true;
+                    } else {
+                        if (name.includes(rawQuery) || description.includes(rawQuery) || keywords.includes(rawQuery)) {
+                            isMatch = true;
+                        }
+                        if (!isMatch && normalizedQuery.length > 0) {
+                            if (kanaKeywords.includes(normalizedQuery)) {
+                                isMatch = true;
+                            }
+                        }
+                    }
+
+                    if (isMatch) {
+                        card.classList.remove('tool-card-hidden');
+                        sectionHasVisibleCard = true;
+                    } else {
+                        card.classList.add('tool-card-hidden');
+                    }
+                });
+
+                if (rawQuery.length === 0) {
+                    section.classList.remove('category-hidden');
+                } else if (!sectionHasVisibleCard) {
+                    section.classList.add('category-hidden');
+                } else {
+                    section.classList.remove('category-hidden');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
