@@ -44,9 +44,9 @@
             color: #007bff; 
             cursor: pointer; 
         }
-        /* 検索機能がツール一覧画面にのみ表示されるようにするためのCSS */
+        /* 2. 【重要】ツール使用中は検索ボックスを非表示にするCSS */
         .hide-list .search-container {
-            display: none;
+            display: none; 
         }
 
         .main-content { width: 90%; max-width: 1200px; margin: 30px auto; padding: 20px; transition: opacity 0.3s; }
@@ -256,7 +256,7 @@
         const returnToTopButton = document.getElementById('returnToTopButton');
         const categoryTabsContainer = document.getElementById('categoryTabs');
         const menuList = document.getElementById('menuList');
-        const searchInput = document.getElementById('searchInput'); // 再取得
+        const searchInput = document.getElementById('searchInput'); // 検索インプットを再取得
         const dynamicToolSections = document.getElementById('dynamicToolSections');
 
         let currentToolId = '';
@@ -269,7 +269,7 @@
             const card = document.createElement('a');
             card.href = '#';
             card.classList.add('tool-card', 'tool-select');
-            // 検索用のデータをdata属性に追加
+            // 検索用のデータをdata属性に追加 (名前、説明、キーワード、カナを結合)
             card.setAttribute('data-keywords', `${tool.name} ${tool.description} ${tool.keywords || ''} ${tool.kana || ''}`.toLowerCase()); 
             card.setAttribute('data-url', tool.url);
             card.setAttribute('data-name', tool.name);
@@ -313,7 +313,6 @@
                 const section = document.createElement('section');
                 section.classList.add('category-section');
                 section.id = category.id;
-                // data-category-nameにはアイコンを含めたカテゴリ名をそのまま使用
                 section.setAttribute('data-category-name', category.name); 
 
                 section.innerHTML = `
@@ -333,7 +332,6 @@
                 // 3. 上部カテゴリタブの生成
                 const tab = document.createElement('div');
                 tab.classList.add('category-tab');
-                // カテゴリタブのテキストもアイコンを含めたカテゴリ名をそのまま使用
                 tab.textContent = category.name; 
                 tab.setAttribute('data-category-id', category.id);
                 
@@ -348,18 +346,18 @@
         createToolSections();
         
         // 再度DOM要素を取得し直す
-        let toolCards = document.querySelectorAll('.tool-select'); // letに変更
+        let toolCards = document.querySelectorAll('.tool-select'); // 検索のために取得
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
         
-        // --- ツール選択時の処理 (ロジックは変更なし) ---
+        // --- ツール選択時の処理 ---
         function selectTool(url, name, categoryId, toolId) {
             currentToolId = toolId;
             
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
-            document.body.classList.add('hide-list');
+            document.body.classList.add('hide-list'); // <body>にクラスを追加し、検索欄を非表示にする
             
             // メニューを必ず表示状態に戻す
             selectedToolContainer.classList.remove('menu-hidden');
@@ -428,7 +426,7 @@
             if (confirmation) {
                 selectedToolContainer.style.display = 'none';
                 selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
-                document.body.classList.remove('hide-list');
+                document.body.classList.remove('hide-list'); // <body>からクラスを削除し、検索欄を表示に戻す
                 toolContent.src = 'about:blank'; 
                 currentToolId = '';
                 currentCategoryId = '';
@@ -481,6 +479,7 @@
             let foundToolsInCategories = new Set();
 
             toolCards.forEach(card => {
+                // data-keywordsはツール名、説明、キーワード、カナを含みます
                 const keywords = card.getAttribute('data-keywords');
                 const cardCategory = card.closest('.category-section');
 
