@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高度な文字数カウントツール</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 900px; /* 2列表示のため幅を維持 */
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        
+        /* --- 除外文字コントロールエリア --- */
+        .controls {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e9e9e9;
+            border-radius: 4px;
+        }
+        .controls label {
+            margin-right: 10px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .controls input[type="text"] {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex-grow: 1; 
+            min-width: 150px;
+        }
+
+        /* --- カウント結果エリアの2列レイアウト --- */
+        .results {
+            border-top: 2px solid #ddd;
+            padding-top: 15px;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 左右2列に分割 */
+            gap: 20px;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* --- 個別の結果項目 --- */
+        .result-item {
+            margin-bottom: 8px;
+            padding: 5px;
+            background-color: #f9f9f9;
+            border-left: 5px solid #007bff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-item strong {
+            display: inline-block;
+            flex-shrink: 0;
+            width: 70%; /* ラベルの幅を調整 */
+            color: #007bff;
+            padding-right: 10px;
+            overflow: hidden; 
+        }
+        .result-value {
+            font-weight: bold;
+            color: #333;
+            flex-shrink: 0;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>文字数カウントツール 🧮</h1>
+
+    <div class="controls">
+        <label for="exclude-chars">除外する文字：</label>
+        <input type="text" id="exclude-chars" value="">
+        <small style="margin-left: 10px;">（例: 「、。」など。連続して入力）</small>
+    </div>
+
+    <textarea id="text-input" placeholder="ここにテキストを入力してください..."></textarea>
+
+    <div class="results">
+        <h2>カウント結果</h2>
+        
+        <div class="results-grid">
+            <div class="column">
+                <h3>基本と除外に関するカウント</h3>
+                <div class="result-item"><strong id="total-count-label">全文字数</strong>: <span id="total-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="no-space-count-label">空白を除いた文字数</strong>: <span id="no-space-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="no-newline-count-label">改行を除いた文字数</strong>: <span id="no-newline-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="no-whitespace-count-label">空白・改行を除いた文字数</strong>: <span id="no-whitespace-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="excluded-count-label">指定文字を除いた文字数</strong>: <span id="excluded-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="excluded-char-count-label">除外文字の合計文字数</strong>: <span id="excluded-char-count" class="result-value">0</span></div>
+            </div>
+
+            <div class="column">
+                <h3>詳細と文字種別カウント</h3>
+                <div class="result-item"><strong id="line-count-label">行数</strong>: <span id="line-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="byte-count-label">推定バイト数 (UTF-8)</strong>: <span id="byte-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="uppercase-count-label">大文字 (A-Z) 数</strong>: <span id="uppercase-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="lowercase-count-label">小文字 (a-z) 数</strong>: <span id="lowercase-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="number-count-label">数字 (0-9) 数</strong>: <span id="number-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="hiragana-count-label">ひらがな数</strong>: <span id="hiragana-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="katakana-count-label">カタカナ数</strong>: <span id="katakana-count" class="result-value">0</span></div>
+                <div class="result-item"><strong id="kanji-count-label">漢字数</strong>: <span id="kanji-count" class="result-value">0</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const textInput = document.getElementById('text-input');
+    const excludeCharsInput = document.getElementById('exclude-chars');
+
+    // 結果表示要素の定義
+    const resultsMap = {
+        totalCount: document.getElementById('total-count'),
+        noSpaceCount: document.getElementById('no-space-count'),
+        noNewlineCount: document.getElementById('no-newline-count'),
+        noWhitespaceCount: document.getElementById('no-whitespace-count'),
+        excludedCount: document.getElementById('excluded-count'),
+        excludedCharCount: document.getElementById('excluded-char-count'),
+        lineCount: document.getElementById('line-count'),
+        byteCount: document.getElementById('byte-count'),
+        hiraganaCount: document.getElementById('hiragana-count'),
+        katakanaCount: document.getElementById('katakana-count'),
+        kanjiCount: document.getElementById('kanji-count'),
+        uppercaseCount: document.getElementById('uppercase-count'),
+        lowercaseCount: document.getElementById('lowercase-count'),
+        numberCount: document.getElementById('number-count'),
+        excludedLabel: document.getElementById('excluded-count-label'),
+        excludedCharLabel: document.getElementById('excluded-char-count-label'),
+    };
+
+    /**
+     * 文字列の推定バイト数を計算します（UTF-8エンコーディングに基づく）
+     * @param {string} str - 入力文字列
+     * @returns {number} 推定バイト数
+     */
+    function getByteLength(str) {
+        if (typeof TextEncoder !== 'undefined') {
+            return new TextEncoder().encode(str).length;
+        }
+        let len = 0;
+        for (let i = 0; i < str.length; i++) {
+            const charCode = str.charCodeAt(i);
+            if (charCode <= 0x7f) {
+                len += 1;
+            } else if (charCode <= 0x7ff) {
+                len += 2;
+            } else if (charCode <= 0xffff) {
+                len += 3;
+            } else {
+                len += 4;
+            }
+        }
+        return len;
+    }
+
+    /**
+     * テキストエリアの内容に基づいて各種文字数を計算し、表示を更新します。
+     */
+    function updateCounts() {
+        const inputText = textInput.value;
+        const excludedChars = excludeCharsInput.value.trim();
+
+        // 1. --- 基本文字数カウント ---
+        const countTotal = inputText.length;
+        const textNoSpace = inputText.replace(/[ 　]/g, '');
+        const countNoSpace = textNoSpace.length;
+        const textNoNewline = inputText.replace(/\r?\n|\r/g, '');
+        const countNoNewline = textNoNewline.length;
+        const textNoWhitespace = inputText.replace(/\s/g, '');
+        const countNoWhitespace = textNoWhitespace.length;
+
+        // 2. --- 指定文字に関するカウント ---
+        let countExcluded = countTotal;
+        let countExcludedCharsInText = 0;
+        
+        if (excludedChars.length > 0) {
+            const escapedChars = excludedChars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp('[' + escapedChars + ']', 'g');
+            
+            const matches = inputText.match(regex);
+            countExcludedCharsInText = matches ? matches.length : 0;
+
+            const textExcluded = inputText.replace(regex, '');
+            countExcluded = textExcluded.length;
+            
+            // ラベルを更新
+            resultsMap.excludedLabel.textContent = `「${excludedChars}」を除いた文字数`;
+            resultsMap.excludedCharLabel.textContent = `「${excludedChars}」の合計文字数`;
+        } else {
+            // 除外文字が「なし」の場合、ラベルをシンプルに戻す
+            resultsMap.excludedLabel.textContent = `指定文字を除いた文字数`;
+            resultsMap.excludedCharLabel.textContent = `除外文字の合計文字数`;
+        }
+        
+        // 3. --- 詳細カウント ---
+        const countLines = inputText.length === 0 ? 0 : inputText.split(/\r?\n/).length;
+        const countBytes = getByteLength(inputText);
+        const countHiragana = (inputText.match(/[ぁ-ん]/g) || []).length;
+        const countKatakana = (inputText.match(/[ァ-ヶー]/g) || []).length;
+        const countKanji = (inputText.match(/[\u4E00-\u9FAF]/g) || []).length;
+        const countUppercase = (inputText.match(/[A-Z]/g) || []).length;
+        const countLowercase = (inputText.match(/[a-z]/g) || []).length;
+        const countNumber = (inputText.match(/[0-9]/g) || []).length;
+        
+        // 4. --- 結果の表示を更新 ---
+        resultsMap.totalCount.textContent = countTotal;
+        resultsMap.noSpaceCount.textContent = countNoSpace;
+        resultsMap.noNewlineCount.textContent = countNoNewline;
+        resultsMap.noWhitespaceCount.textContent = countNoWhitespace;
+        resultsMap.excludedCount.textContent = countExcluded;
+        resultsMap.excludedCharCount.textContent = countExcludedCharsInText;
+        resultsMap.lineCount.textContent = countLines;
+        resultsMap.byteCount.textContent = countBytes;
+        resultsMap.hiraganaCount.textContent = countHiragana;
+        resultsMap.katakanaCount.textContent = countKatakana;
+        resultsMap.kanjiCount.textContent = countKanji;
+        resultsMap.uppercaseCount.textContent = countUppercase;
+        resultsMap.lowercaseCount.textContent = countLowercase;
+        resultsMap.numberCount.textContent = countNumber;
+    }
+
+    // イベントリスナーの設定
+    textInput.addEventListener('input', updateCounts);
+    excludeCharsInput.addEventListener('input', updateCounts);
+
+    // ページロード時にも一度カウントを実行
+    updateCounts();
+</script>
+
+</body>
+</html>
