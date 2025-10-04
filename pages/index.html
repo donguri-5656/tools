@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ああ多機能オンラインツール＆ゲーム集</title>
+    <title>多機能オンラインツール＆ゲーム集</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* 1. 基本設定 */
+        /* CSS部分は変更なし */
         body {
             font-family: 'Arial', 'Helvetica', 'sans-serif', 'Material Icons';
             margin: 0;
@@ -14,8 +14,6 @@
             background-color: #f4f7f9;
             color: #333;
             overflow-x: hidden;
-            /* ★修正点: bodyにhide-listが付いているときに、スクロールを隠すために使用 */
-            position: relative; 
         }
         .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
         .search-container { width: 90%; max-width: 600px; margin: 0 auto; position: relative; }
@@ -171,28 +169,12 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        /* ★★★ 検索欄非表示の決定版修正 ★★★ */
-        /* hide-listが付いているとき、ツール一覧全体を左に移動させ、非表示にする */
-        #tool-list {
-            position: relative; /* トランジションのため */
-            width: 100%;
-            transition: transform 0.3s ease-in-out;
-        }
-
+        /* 検索欄非表示の修正 */
+        /* ツール選択時にtool-list全体を非表示にする (既存ルールの確認/強化) */
         .hide-list #tool-list { 
-            /* ツール一覧全体を画面外に完全に移動させる */
-            transform: translateX(-100vw); 
-            position: fixed; /* ツール画面と重ならないように固定 */
-            opacity: 0; 
-            pointer-events: none; /* クリック不可にする */
-            z-index: 999; /* toolContainerより下にする */
+            display: none; /* ツール選択時、検索欄を含むツール一覧を非表示にする */
         }
-        
-        /* ツール画面は固定表示 */
-        .hide-list #selectedToolContainer { 
-            display: flex; 
-            z-index: 1000;
-        }
+        .hide-list #selectedToolContainer { display: flex; }
         
     </style>
 </head>
@@ -201,7 +183,7 @@
     <div id="selectedToolContainer">
         <div id="selectedToolHeader">
             <div id="categoryTabs">
-                </div>
+            </div>
             
             <div id="actionButtons">
                 <div id="hideMenuButton" class="action-button">
@@ -250,13 +232,12 @@
         const menuList = document.getElementById('menuList');
         const searchInput = document.getElementById('searchInput');
         const dynamicToolSections = document.getElementById('dynamicToolSections');
-        const toolList = document.getElementById('tool-list'); // 新しく取得
 
         let currentToolId = '';
         let currentCategoryId = '';
 
-        // 外部ファイルから読み込まれたallToolDataを使用 (toolData.jsが必要です)
-        const allCategoriesData = typeof allToolData !== 'undefined' ? allToolData : []; 
+        // 外部ファイルから読み込まれたallToolDataを使用
+        const allCategoriesData = allToolData; 
 
         function createToolCard(tool, categoryId) {
             const card = document.createElement('a');
@@ -268,6 +249,7 @@
             card.setAttribute('data-name', tool.name);
             card.setAttribute('data-id', tool.id);
             
+            // アイコンの判定 (簡易的なもの)
             let icon = 'build'; 
             if (tool.name.includes('文字数')) icon = 'text_format';
             else if (tool.name.includes('QR')) icon = 'qr_code';
@@ -296,13 +278,16 @@
         }
 
         function createToolSections() {
+            // コンテンツをクリアして再生成を防止
             dynamicToolSections.innerHTML = '';
             categoryTabsContainer.innerHTML = '';
 
             allCategoriesData.forEach(category => {
+                // 1. カテゴリセクションの生成
                 const section = document.createElement('section');
                 section.classList.add('category-section');
                 section.id = category.id;
+                // ★修正箇所1: data-category-nameにはアイコンを含めたカテゴリ名をそのまま使用
                 section.setAttribute('data-category-name', category.name); 
 
                 section.innerHTML = `
@@ -312,14 +297,17 @@
                 
                 const toolGrid = section.querySelector('.tool-grid');
                 
+                // 2. ツールカードの生成
                 category.tools.forEach(tool => {
                     toolGrid.appendChild(createToolCard(tool, category.id));
                 });
 
                 dynamicToolSections.appendChild(section);
 
+                // 3. 上部カテゴリタブの生成
                 const tab = document.createElement('div');
                 tab.classList.add('category-tab');
+                // ★修正箇所2: カテゴリタブのテキストもアイコンを含めたカテゴリ名をそのまま使用
                 tab.textContent = category.name; 
                 tab.setAttribute('data-category-id', category.id);
                 
@@ -334,20 +322,21 @@
         createToolSections();
         
         // 再度DOM要素を取得し直す
+        // ★修正箇所3: スクリプトの実行順により、ここで再取得が必要
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
         
-        // --- ツール選択時の処理 ---
+        // --- ツール選択時の処理 (ロジックは変更なし) ---
         function selectTool(url, name, categoryId, toolId) {
             currentToolId = toolId;
             
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
-            // bodyにhide-listクラスを付与
-            document.body.classList.add('hide-list'); 
+            document.body.classList.add('hide-list');
             
+            // メニューを必ず表示状態に戻す
             selectedToolContainer.classList.remove('menu-hidden');
             
             selectedToolContainer.classList.remove('dropdown-open');
@@ -355,7 +344,7 @@
             currentCategoryId = '';
         }
 
-        // --- ドロップダウンメニューの更新 (データ参照) ---
+        // --- ドロップダウンメニューの更新 (データ参照に変更) ---
         function updateDropdownMenu(categoryId) {
             const categoryData = allCategoriesData.find(cat => cat.id === categoryId);
             menuList.innerHTML = ''; 
@@ -397,6 +386,7 @@
                 currentCategoryId = '';
             } else {
                 selectedToolContainer.classList.add('dropdown-open');
+                // DOMから正しいタブ要素を取得
                 const selectedTab = document.querySelector(`.category-tab[data-category-id="${categoryId}"]`);
                 if (selectedTab) {
                     selectedTab.classList.add('active');
@@ -413,7 +403,7 @@
             if (confirmation) {
                 selectedToolContainer.style.display = 'none';
                 selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
-                document.body.classList.remove('hide-list'); 
+                document.body.classList.remove('hide-list');
                 toolContent.src = 'about:blank'; 
                 currentToolId = '';
                 currentCategoryId = '';
@@ -462,7 +452,8 @@
         }
 
         searchInput.addEventListener('keyup', function() {
-            if (selectedToolContainer.style.display === 'flex') return;
+            // ★変更: bodyに.hide-listが付いていたら処理を中断
+            if (document.body.classList.contains('hide-list')) return;
 
             const rawQuery = this.value.toLowerCase().trim();
             const normalizedQuery = normalizeKana(rawQuery);
