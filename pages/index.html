@@ -16,19 +16,19 @@
             overflow-x: hidden;
         }
         
-        /* 💡 修正点: bodyに hide-list がある場合、header全体を非表示にする */
         .header { 
             background-color: #ffffff; 
             padding: 20px 0; 
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); 
             text-align: center; 
         }
+        
+        /* 検索バー（header）を非表示にするルール 💡 ここが重要 💡 */
         .hide-list .header {
             display: none;
         }
-        /* ----------------------------------------------- */
         
-        /* 検索機能のCSSをここに追加/復元 */
+        /* 検索機能のCSS */
         .search-container {
             width: 90%;
             max-width: 600px;
@@ -53,7 +53,7 @@
             cursor: pointer;
         }
 
-        /* --- 既存のCSSはここから --- */
+        /* --- 既存のCSS --- */
         .main-content { width: 90%; max-width: 1200px; margin: 30px auto; padding: 20px; transition: opacity 0.3s; }
         .category-section { 
             background-color: #ffffff; 
@@ -84,7 +84,6 @@
             margin-bottom: 10px;
             color: #007bff;
         }
-
 
         /* 2. 選択されたツール表示エリア */
         #selectedToolContainer {
@@ -257,9 +256,7 @@
 
     <script>
         // ----------------------------------------------------
-        // 🚨 注意: toolData.js の内容は、この <script> の前に読み込まれている必要があります。
-        // toolData.js の内容:
-        // const allToolData = [...];
+        // 🚨 toolData.js の内容がグローバル変数 allToolData として定義されている必要があります。
         // ----------------------------------------------------
         
         const selectedToolContainer = document.getElementById('selectedToolContainer');
@@ -368,13 +365,14 @@
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
         
-        // --- ツール選択時の処理 (ロジックは変更なし) ---
+        // --- ツール選択時の処理 ---
         function selectTool(url, name, categoryId, toolId) {
             currentToolId = toolId;
             
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
+            // ツール選択時、bodyに hide-list クラスを付与
             document.body.classList.add('hide-list');
             
             // メニューを必ず表示状態に戻す
@@ -385,7 +383,7 @@
             currentCategoryId = '';
         }
 
-        // --- ドロップダウンメニューの更新 (データ参照に変更) ---
+        // --- ドロップダウンメニューの更新 ---
         function updateDropdownMenu(categoryId) {
             const categoryData = allCategoriesData.find(cat => cat.id === categoryId);
             menuList.innerHTML = ''; 
@@ -415,7 +413,7 @@
             }
         }
 
-        // --- ドロップダウンの開閉処理 (変更なし) ---
+        // --- ドロップダウンの開閉処理 ---
         function toggleDropdown(categoryId) {
             const isCurrentlyOpen = selectedToolContainer.classList.contains('dropdown-open');
             const isSameCategory = currentCategoryId === categoryId && isCurrentlyOpen;
@@ -437,13 +435,14 @@
             }
         }
         
-        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (検索クリア処理を復元) ---
+        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 ---
         returnToTopButton.addEventListener('click', function() {
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
             if (confirmation) {
                 selectedToolContainer.style.display = 'none';
                 selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
+                // メインメニューに戻る時、bodyから hide-list クラスを削除
                 document.body.classList.remove('hide-list');
                 toolContent.src = 'about:blank'; 
                 currentToolId = '';
@@ -456,7 +455,7 @@
             }
         });
         
-        // --- 1. メニューをしまうボタンの機能 (変更なし) ---
+        // --- メニューをしまうボタンの機能 ---
         hideMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.add('menu-hidden');
             selectedToolContainer.classList.remove('dropdown-open');
@@ -464,12 +463,12 @@
             currentCategoryId = '';
         });
 
-        // --- 2. メニューを出すボタンの機能 (変更なし) ---
+        // --- メニューを出すボタンの機能 ---
         showMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.remove('menu-hidden');
         });
 
-        // --- ドロップダウン外のタップで閉じる処理 (変更なし) ---
+        // --- ドロップダウン外のタップで閉じる処理 ---
         selectedToolContainer.addEventListener('click', function(e) {
             const isClickInsideDropdown = e.target.closest('#menuList') || e.target.closest('.category-tab');
             const isClickOnActionButtons = e.target.closest('#actionButtons');
@@ -484,10 +483,10 @@
         });
         
         // ===================================
-        // 検索機能のロジックを再実装
+        // 検索機能のロジック
         // ===================================
         
-        // ひらがなをカタカナに変換する関数（検索精度向上のため）
+        // ひらがなをカタカナに変換する関数
         function normalizeKana(str) {
             if (!str) return '';
             return str.replace(/[\u30a1-\u30f6]/g, function(match) {
