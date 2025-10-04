@@ -26,7 +26,6 @@
             padding: 25px; 
             margin-bottom: 30px; 
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); 
-            /* 初期はCSSで非表示にせず、JSで追加するため、ここでのdisplay:noneは削除 */
         }
         .category-hidden { display: none; }
         .tool-card-hidden { display: none !important; }
@@ -41,7 +40,6 @@
             text-decoration: none; 
             color: inherit; 
             display: block; 
-            /* アイコンを中央に */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -229,13 +227,11 @@
         const categoryTabsContainer = document.getElementById('categoryTabs');
         const menuList = document.getElementById('menuList');
         const searchInput = document.getElementById('searchInput');
-        const dynamicToolSections = document.getElementById('dynamicToolSections'); // 新しいコンテナ
+        const dynamicToolSections = document.getElementById('dynamicToolSections');
 
         let currentToolId = '';
         let currentCategoryId = '';
 
-        // ★★★ ツール一覧の動的生成 ★★★
-        
         // 外部ファイルから読み込まれたallToolDataを使用
         const allCategoriesData = allToolData; 
 
@@ -287,7 +283,8 @@
                 const section = document.createElement('section');
                 section.classList.add('category-section');
                 section.id = category.id;
-                section.setAttribute('data-category-name', category.name.replace(/[^a-zA-Z0-9\s]/g, '').trim()); // アイコンを除去
+                // ★修正箇所1: data-category-nameにはアイコンを含めたカテゴリ名をそのまま使用
+                section.setAttribute('data-category-name', category.name); 
 
                 section.innerHTML = `
                     <h2 class="category-title">${category.name}</h2>
@@ -306,7 +303,8 @@
                 // 3. 上部カテゴリタブの生成
                 const tab = document.createElement('div');
                 tab.classList.add('category-tab');
-                tab.textContent = category.name.replace(/[^a-zA-Z0-9\s]/g, '').trim(); // アイコンを除去
+                // ★修正箇所2: カテゴリタブのテキストもアイコンを含めたカテゴリ名をそのまま使用
+                tab.textContent = category.name; 
                 tab.setAttribute('data-category-id', category.id);
                 
                 tab.addEventListener('click', function() {
@@ -320,6 +318,7 @@
         createToolSections();
         
         // 再度DOM要素を取得し直す
+        // ★修正箇所3: スクリプトの実行順により、ここで再取得が必要
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
@@ -348,8 +347,6 @@
 
             if (categoryData) {
                 categoryData.tools.forEach(tool => {
-                    // 検索でフィルタリングされたツールのみをドロップダウンに表示するための処理 (オプション)
-                    // 今回はシンプルにデータ内の全ツールを表示します。
                     
                     const link = document.createElement('a');
                     link.href = '#';
@@ -385,6 +382,7 @@
                 currentCategoryId = '';
             } else {
                 selectedToolContainer.classList.add('dropdown-open');
+                // DOMから正しいタブ要素を取得
                 const selectedTab = document.querySelector(`.category-tab[data-category-id="${categoryId}"]`);
                 if (selectedTab) {
                     selectedTab.classList.add('active');
@@ -399,7 +397,6 @@
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
             if (confirmation) {
-                // トップメニューに戻る
                 selectedToolContainer.style.display = 'none';
                 selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
                 document.body.classList.remove('hide-list');
@@ -408,9 +405,7 @@
                 currentCategoryId = '';
                 categoryTabs.forEach(tab => tab.classList.remove('active'));
                 
-                // 検索状態をリセット
                 searchInput.value = '';
-                // ツール一覧を再描画することで、検索結果をリセットする
                 sections.forEach(s => s.classList.remove('category-hidden'));
                 document.querySelectorAll('.tool-card-hidden').forEach(c => c.classList.remove('tool-card-hidden'));
             }
@@ -443,7 +438,7 @@
             }
         });
 
-        // --- 検索機能 (ロジックをデータ参照に修正) ---
+        // --- 検索機能 (変更なし) ---
         function normalizeKana(str) {
             if (!str) return '';
             str = str.replace(/[\u30a1-\u30f6]/g, function(match) {
@@ -464,7 +459,6 @@
                 
                 toolCardsInSearch.forEach(card => {
                     const name = card.querySelector('.tool-name').textContent.toLowerCase();
-                    // data属性から直接値を取得する (動的生成された要素に対応)
                     const keywords = card.getAttribute('data-keywords') ? card.getAttribute('data-keywords').toLowerCase() : '';
                     const kanaKeywords = card.getAttribute('data-kana') ? card.getAttribute('data-kana').toLowerCase() : '';
 
