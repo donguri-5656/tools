@@ -56,7 +56,7 @@
             position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background-color: #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
             display: none; flex-direction: column; min-height: 100vh;
         }
-        
+
         /* ヘッダーコンテナ（カテゴリタブとボタンを含む） */
         #selectedToolHeader {
             display: flex; justify-content: space-between; align-items: stretch; padding: 0 20px 0 0; background-color: #007bff;
@@ -89,14 +89,14 @@
             background-color: #0069d9;
             font-weight: bold;
         }
-        
+
         /* メニュー非表示時 (上部に完全に隠す) */
         #selectedToolContainer.menu-hidden #selectedToolHeader {
             transform: translateY(-50px);
             opacity: 0;
             pointer-events: none;
         }
-        
+
         /* 3. アクションボタンのスタイル */
         #actionButtons {
             display: flex; align-items: center; background-color: #0069d9; padding: 0 5px;
@@ -141,7 +141,7 @@
             opacity: 1; 
             pointer-events: auto;
         }
-        
+
         /* 5. iFrameの調整 */
         #toolContent {
             width: 100%;
@@ -168,14 +168,24 @@
         .dropdown-tool-card.active-tool {
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
-        
+
         /* 検索欄非表示の修正 */
         /* ツール選択時にtool-list全体を非表示にする (既存ルールの確認/強化) */
+        /* ------------------------------------------- */
+        /* ★検索欄非表示の確実な修正 */
+        /* ツール選択時、検索欄を含むヘッダー全体を非表示にする */
+        .hide-list .header {
+            display: none; 
+        }
+
+        /* ツール選択時、ツール一覧全体も非表示にする */
         .hide-list #tool-list { 
             display: none; /* ツール選択時、検索欄を含むツール一覧を非表示にする */
+            display: none; 
         }
+        /* ------------------------------------------- */
         .hide-list #selectedToolContainer { display: flex; }
-        
+
     </style>
 </head>
 <body>
@@ -184,7 +194,7 @@
         <div id="selectedToolHeader">
             <div id="categoryTabs">
             </div>
-            
+
             <div id="actionButtons">
                 <div id="hideMenuButton" class="action-button">
                     <span class="material-icons">menu_open</span>
@@ -194,13 +204,13 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="menuList">
             </div>
 
         <iframe id="toolContent" title="Selected Tool Content"></iframe>
     </div>
-    
+
     <div id="showMenuButton">
         <span class="material-icons">menu</span>
     </div>
@@ -248,7 +258,7 @@
             card.setAttribute('data-url', tool.url);
             card.setAttribute('data-name', tool.name);
             card.setAttribute('data-id', tool.id);
-            
+
             // アイコンの判定 (簡易的なもの)
             let icon = 'build'; 
             if (tool.name.includes('文字数')) icon = 'text_format';
@@ -269,7 +279,7 @@
                 <div class="tool-name"><b>${tool.name}</b></div>
                 <div class="tool-description">${tool.description}</div>
             `;
-            
+
             card.addEventListener('click', function(e) {
                 e.preventDefault();
                 selectTool(tool.url, tool.name, categoryId, tool.id);
@@ -294,9 +304,9 @@
                     <h2 class="category-title">${category.name}</h2>
                     <div class="tool-grid"></div>
                 `;
-                
+
                 const toolGrid = section.querySelector('.tool-grid');
-                
+
                 // 2. ツールカードの生成
                 category.tools.forEach(tool => {
                     toolGrid.appendChild(createToolCard(tool, category.id));
@@ -310,35 +320,35 @@
                 // ★修正箇所2: カテゴリタブのテキストもアイコンを含めたカテゴリ名をそのまま使用
                 tab.textContent = category.name; 
                 tab.setAttribute('data-category-id', category.id);
-                
+
                 tab.addEventListener('click', function() {
                     toggleDropdown(category.id);
                 });
                 categoryTabsContainer.appendChild(tab);
             });
         }
-        
+
         // 初回ロード時に動的生成を実行
         createToolSections();
-        
+
         // 再度DOM要素を取得し直す
         // ★修正箇所3: スクリプトの実行順により、ここで再取得が必要
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
-        
+
         // --- ツール選択時の処理 (ロジックは変更なし) ---
         function selectTool(url, name, categoryId, toolId) {
             currentToolId = toolId;
-            
+
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
             document.body.classList.add('hide-list');
-            
+
             // メニューを必ず表示状態に戻す
             selectedToolContainer.classList.remove('menu-hidden');
-            
+
             selectedToolContainer.classList.remove('dropdown-open');
             categoryTabs.forEach(tab => tab.classList.remove('active'));
             currentCategoryId = '';
@@ -351,12 +361,12 @@
 
             if (categoryData) {
                 categoryData.tools.forEach(tool => {
-                    
+
                     const link = document.createElement('a');
                     link.href = '#';
                     link.textContent = tool.name;
                     link.classList.add('dropdown-tool-card');
-                    
+
                     if (tool.id === currentToolId) {
                         link.classList.add('active-tool');
                     }
@@ -368,7 +378,7 @@
                         categoryTabs.forEach(tab => tab.classList.remove('active'));
                         currentCategoryId = '';
                     });
-                    
+
                     menuList.appendChild(link);
                 });
             }
@@ -378,10 +388,10 @@
         function toggleDropdown(categoryId) {
             const isCurrentlyOpen = selectedToolContainer.classList.contains('dropdown-open');
             const isSameCategory = currentCategoryId === categoryId && isCurrentlyOpen;
-            
+
             selectedToolContainer.classList.remove('dropdown-open');
             categoryTabs.forEach(tab => tab.classList.remove('active'));
-            
+
             if (isSameCategory) {
                 currentCategoryId = '';
             } else {
@@ -395,11 +405,11 @@
                 updateDropdownMenu(categoryId);
             }
         }
-        
+
         // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (変更なし) ---
         returnToTopButton.addEventListener('click', function() {
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
-            
+
             if (confirmation) {
                 selectedToolContainer.style.display = 'none';
                 selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
@@ -408,13 +418,13 @@
                 currentToolId = '';
                 currentCategoryId = '';
                 categoryTabs.forEach(tab => tab.classList.remove('active'));
-                
+
                 searchInput.value = '';
                 sections.forEach(s => s.classList.remove('category-hidden'));
                 document.querySelectorAll('.tool-card-hidden').forEach(c => c.classList.remove('tool-card-hidden'));
             }
         });
-        
+
         // --- 1. メニューをしまうボタンの機能 (変更なし) ---
         hideMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.add('menu-hidden');
@@ -432,7 +442,7 @@
         selectedToolContainer.addEventListener('click', function(e) {
             const isClickInsideDropdown = e.target.closest('#menuList') || e.target.closest('.category-tab');
             const isClickOnActionButtons = e.target.closest('#actionButtons');
-            
+
             if (!isClickInsideDropdown && !isClickOnActionButtons) {
                 if (selectedToolContainer.classList.contains('dropdown-open')) {
                     selectedToolContainer.classList.remove('dropdown-open');
@@ -453,22 +463,23 @@
 
         searchInput.addEventListener('keyup', function() {
             // ★変更: bodyに.hide-listが付いていたら処理を中断
+            // bodyに.hide-listが付いていたら処理を中断
             if (document.body.classList.contains('hide-list')) return;
 
             const rawQuery = this.value.toLowerCase().trim();
             const normalizedQuery = normalizeKana(rawQuery);
-            
+
             sections.forEach(section => {
                 let sectionHasVisibleCard = false;
                 const toolCardsInSearch = section.querySelectorAll('.tool-card');
-                
+
                 toolCardsInSearch.forEach(card => {
                     const name = card.querySelector('.tool-name').textContent.toLowerCase();
                     const keywords = card.getAttribute('data-keywords') ? card.getAttribute('data-keywords').toLowerCase() : '';
                     const kanaKeywords = card.getAttribute('data-kana') ? card.getAttribute('data-kana').toLowerCase() : '';
 
                     let isMatch = false;
-                    
+
                     if (rawQuery.length === 0) {
                         isMatch = true;
                     } else {
