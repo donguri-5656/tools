@@ -6,7 +6,7 @@
     <title>多機能オンラインツール＆ゲーム集</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* CSS部分は変更なし */
+        /* 1. 基本設定 */
         body {
             font-family: 'Arial', 'Helvetica', 'sans-serif', 'Material Icons';
             margin: 0;
@@ -14,6 +14,8 @@
             background-color: #f4f7f9;
             color: #333;
             overflow-x: hidden;
+            /* ★修正点: bodyにhide-listが付いているときに、スクロールを隠すために使用 */
+            position: relative; 
         }
         .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
         .search-container { width: 90%; max-width: 600px; margin: 0 auto; position: relative; }
@@ -169,19 +171,28 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        /* ★重要修正箇所 */
-        .hide-list #tool-list { 
-            display: none; 
-            /* 親要素を非表示にする設定はこれでOKですが、 */
-            /* 念のため子要素のヘッダーも確実に非表示にします */
-        }
-        
-        /* ★追加修正箇所: hide-list時にはヘッダー全体を隠す */
-        .hide-list .header {
-            display: none;
+        /* ★★★ 検索欄非表示の決定版修正 ★★★ */
+        /* hide-listが付いているとき、ツール一覧全体を左に移動させ、非表示にする */
+        #tool-list {
+            position: relative; /* トランジションのため */
+            width: 100%;
+            transition: transform 0.3s ease-in-out;
         }
 
-        .hide-list #selectedToolContainer { display: flex; }
+        .hide-list #tool-list { 
+            /* ツール一覧全体を画面外に完全に移動させる */
+            transform: translateX(-100vw); 
+            position: fixed; /* ツール画面と重ならないように固定 */
+            opacity: 0; 
+            pointer-events: none; /* クリック不可にする */
+            z-index: 999; /* toolContainerより下にする */
+        }
+        
+        /* ツール画面は固定表示 */
+        .hide-list #selectedToolContainer { 
+            display: flex; 
+            z-index: 1000;
+        }
         
     </style>
 </head>
@@ -239,12 +250,12 @@
         const menuList = document.getElementById('menuList');
         const searchInput = document.getElementById('searchInput');
         const dynamicToolSections = document.getElementById('dynamicToolSections');
+        const toolList = document.getElementById('tool-list'); // 新しく取得
 
         let currentToolId = '';
         let currentCategoryId = '';
 
         // 外部ファイルから読み込まれたallToolDataを使用 (toolData.jsが必要です)
-        // 仮にデータがない場合のエラーを避けるため、存在チェックを追加
         const allCategoriesData = typeof allToolData !== 'undefined' ? allToolData : []; 
 
         function createToolCard(tool, categoryId) {
@@ -334,6 +345,7 @@
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
+            // bodyにhide-listクラスを付与
             document.body.classList.add('hide-list'); 
             
             selectedToolContainer.classList.remove('menu-hidden');
