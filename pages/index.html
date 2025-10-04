@@ -169,11 +169,18 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        /* 検索欄非表示の修正 */
-        /* ツール選択時にtool-list全体を非表示にする (既存ルールの確認/強化) */
-        .hide-list #tool-list { 
-            display: none; /* ツール選択時、検索欄を含むツール一覧を非表示にする */
+        /* ------------------------------------------- */
+        /* ★検索欄非表示の確実な修正 */
+        /* ツール選択時、検索欄を含むヘッダー全体を非表示にする */
+        .hide-list .header {
+            display: none; 
         }
+
+        /* ツール選択時、ツール一覧全体も非表示にする */
+        .hide-list #tool-list { 
+            display: none; 
+        }
+        /* ------------------------------------------- */
         .hide-list #selectedToolContainer { display: flex; }
         
     </style>
@@ -452,7 +459,7 @@
         }
 
         searchInput.addEventListener('keyup', function() {
-            // ★変更: bodyに.hide-listが付いていたら処理を中断
+            // bodyに.hide-listが付いていたら処理を中断
             if (document.body.classList.contains('hide-list')) return;
 
             const rawQuery = this.value.toLowerCase().trim();
