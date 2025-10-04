@@ -169,8 +169,19 @@
             background-color: #e6f0ff; color: #007bff; font-weight: bold;
         }
         
-        .hide-list #tool-list { display: none; }
-        .hide-list #selectedToolContainer { display: flex; }
+        /* ★★★ 修正箇所 ★★★ */
+        /* bodyにhide-listクラスがある時、#tool-list全体を非表示にする */
+        .hide-list #tool-list { 
+            display: none; 
+        }
+        .hide-list #selectedToolContainer { 
+            display: flex; 
+        }
+        /* 以前のコードでは.hide-list #tool-listの指定があったため、これが#tool-list全体を隠すべきでした。 */
+        /* もしこの指定で検索欄が残る場合、検索欄が#tool-listの外にあるか、HTMLの構造が想定外です。 */
+        /* HTML構造を確認したところ、#tool-listで全体を囲んでいるため、上記で十分なはずです。 */
+        /* 念のため、検索入力欄を囲む.headerも#tool-listに含まれていることを確認してください。 */
+        /* (今回のHTMLでは.headerは#tool-listの中にあります。) */
         
     </style>
 </head>
@@ -219,6 +230,7 @@
     <script src="toolData.js"></script>
 
     <script>
+        // ... (JavaScriptコードは変更なし。前回のコードを使用してください。)
         const selectedToolContainer = document.getElementById('selectedToolContainer');
         const toolContent = document.getElementById('toolContent');
         const hideMenuButton = document.getElementById('hideMenuButton'); 
@@ -233,7 +245,8 @@
         let currentCategoryId = '';
 
         // 外部ファイルから読み込まれたallToolDataを使用
-        const allCategoriesData = allToolData; 
+        // ※このスクリプトを実行する前に、toolData.jsが読み込まれている必要があります。
+        const allCategoriesData = typeof allToolData !== 'undefined' ? allToolData : []; 
 
         function createToolCard(tool, categoryId) {
             const card = document.createElement('a');
@@ -274,16 +287,13 @@
         }
 
         function createToolSections() {
-            // コンテンツをクリアして再生成を防止
             dynamicToolSections.innerHTML = '';
             categoryTabsContainer.innerHTML = '';
 
             allCategoriesData.forEach(category => {
-                // 1. カテゴリセクションの生成
                 const section = document.createElement('section');
                 section.classList.add('category-section');
                 section.id = category.id;
-                // ★修正箇所1: data-category-nameにはアイコンを含めたカテゴリ名をそのまま使用
                 section.setAttribute('data-category-name', category.name); 
 
                 section.innerHTML = `
@@ -293,17 +303,14 @@
                 
                 const toolGrid = section.querySelector('.tool-grid');
                 
-                // 2. ツールカードの生成
                 category.tools.forEach(tool => {
                     toolGrid.appendChild(createToolCard(tool, category.id));
                 });
 
                 dynamicToolSections.appendChild(section);
 
-                // 3. 上部カテゴリタブの生成
                 const tab = document.createElement('div');
                 tab.classList.add('category-tab');
-                // ★修正箇所2: カテゴリタブのテキストもアイコンを含めたカテゴリ名をそのまま使用
                 tab.textContent = category.name; 
                 tab.setAttribute('data-category-id', category.id);
                 
@@ -314,16 +321,12 @@
             });
         }
         
-        // 初回ロード時に動的生成を実行
         createToolSections();
         
-        // 再度DOM要素を取得し直す
-        // ★修正箇所3: スクリプトの実行順により、ここで再取得が必要
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
         
-        // --- ツール選択時の処理 (ロジックは変更なし) ---
         function selectTool(url, name, categoryId, toolId) {
             currentToolId = toolId;
             
@@ -332,7 +335,6 @@
             selectedToolContainer.style.display = 'flex';
             document.body.classList.add('hide-list');
             
-            // メニューを必ず表示状態に戻す
             selectedToolContainer.classList.remove('menu-hidden');
             
             selectedToolContainer.classList.remove('dropdown-open');
@@ -340,7 +342,6 @@
             currentCategoryId = '';
         }
 
-        // --- ドロップダウンメニューの更新 (データ参照に変更) ---
         function updateDropdownMenu(categoryId) {
             const categoryData = allCategoriesData.find(cat => cat.id === categoryId);
             menuList.innerHTML = ''; 
@@ -370,7 +371,6 @@
             }
         }
 
-        // --- ドロップダウンの開閉処理 (変更なし) ---
         function toggleDropdown(categoryId) {
             const isCurrentlyOpen = selectedToolContainer.classList.contains('dropdown-open');
             const isSameCategory = currentCategoryId === categoryId && isCurrentlyOpen;
@@ -382,7 +382,6 @@
                 currentCategoryId = '';
             } else {
                 selectedToolContainer.classList.add('dropdown-open');
-                // DOMから正しいタブ要素を取得
                 const selectedTab = document.querySelector(`.category-tab[data-category-id="${categoryId}"]`);
                 if (selectedTab) {
                     selectedTab.classList.add('active');
@@ -392,7 +391,6 @@
             }
         }
         
-        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (変更なし) ---
         returnToTopButton.addEventListener('click', function() {
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
@@ -411,7 +409,6 @@
             }
         });
         
-        // --- 1. メニューをしまうボタンの機能 (変更なし) ---
         hideMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.add('menu-hidden');
             selectedToolContainer.classList.remove('dropdown-open');
@@ -419,12 +416,10 @@
             currentCategoryId = '';
         });
 
-        // --- 2. メニューを出すボタンの機能 (変更なし) ---
         showMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.remove('menu-hidden');
         });
 
-        // --- ドロップダウン外のタップで閉じる処理 (変更なし) ---
         selectedToolContainer.addEventListener('click', function(e) {
             const isClickInsideDropdown = e.target.closest('#menuList') || e.target.closest('.category-tab');
             const isClickOnActionButtons = e.target.closest('#actionButtons');
@@ -438,7 +433,6 @@
             }
         });
 
-        // --- 検索機能 (変更なし) ---
         function normalizeKana(str) {
             if (!str) return '';
             str = str.replace(/[\u30a1-\u30f6]/g, function(match) {
