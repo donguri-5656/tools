@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>デザイン拡張版 QRコードジェネレーター</title>
+    <script type="text/javascript" src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <style>
+        /* --- CSS スタイル --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 左側: 設定パネル */
+        .settings-panel {
+            flex: 1;
+            padding: 30px;
+            max-width: 550px;
+        }
+
+        /* 右側: QRコード表示エリア */
+        .preview-panel {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+            border-left: 1px solid #eee;
+        }
+
+        h1 {
+            color: #d9534f;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input[type="text"], input[type="color"], select, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        
+        input[type="file"] {
+            padding-top: 5px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        .input-group > div {
+            flex: 1;
+        }
+
+        #qrcode {
+            margin-top: 15px;
+            padding: 15px;
+            border: 2px solid #d9534f;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 330px; 
+            min-height: 330px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* 変換後の<img>タグのスタイル調整 */
+        #qrcode img {
+            width: 300px;
+            height: 300px;
+            /* 長押し/右クリックで保存できるように、画像をブロック要素にする */
+            display: block;
+        }
+        
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: background-color 0.3s ease;
+        }
+
+        #generate-btn {
+            background-color: #5cb85c;
+            color: white;
+        }
+        
+        #download-btn {
+            background-color: #f0ad4e;
+            color: #333;
+        }
+
+        .help-text {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: -5px;
+            margin-bottom: 10px;
+            padding-left: 5px;
+        }
+
+        /* スマホなどの狭い画面でのレイアウト調整 */
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            .settings-panel, .preview-panel {
+                max-width: 100%;
+                border-left: none;
+                min-width: unset;
+            }
+            .preview-panel {
+                border-top: 1px solid #eee;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        
+        <div class="settings-panel">
+            <h1>🎨 QRコード設定</h1>
+
+            <label for="qr-data">QRコードに含めるデータ (URL, テキスト)</label>
+            <input type="text" id="qr-data" value="" placeholder="ここにテキストやURLを入力">
+            
+            <div class="input-group">
+                <div style="flex: 1;">
+                    <label for="dots-type">QRコードの形状 (ドット)</label>
+                    <select id="dots-type">
+                        <option value="square">四角</option>
+                        <option value="dots">点</option>
+                        <option value="rounded">丸みを帯びた四角</option>
+                        <option value="extra-rounded">完全な丸</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div>
+                    <label for="color-dark">QRコードの色</label>
+                    <input type="color" id="color-dark" value="#000000">
+                </div>
+                <div>
+                    <label for="background-color">背景の色</label>
+                    <input type="color" id="background-color" value="#ffffff">
+                </div>
+            </div>
+            
+            <label for="image-upload">ロゴ/イラストのアップロード (ファイルから)</label>
+            <input type="file" id="image-upload" accept="image/png, image/jpeg, image/svg+xml">
+            <p class="help-text">画像をアップロードすると中央にロゴとして表示されます。</p>
+
+            <label for="error-level">読み取りやすさのレベル</label>
+            <select id="error-level">
+                <option value="L">L: 標準（小さな汚れに強い）</option>
+                <option value="M">M: 中（一般的な汚れに強い）</option>
+                <option value="Q">Q: 高（中程度の汚れに強い）</option>
+                <option value="H" selected>H: 最高（大きな汚れ・破損に最も強い）</option>
+            </select>
+            <p class="help-text">レベルが高いほど、ロゴなどが入っても読み取りやすくなります。</p>
+
+            <div class="button-group">
+                <button id="generate-btn">QRコードを生成・更新</button>
+                <button id="download-btn" disabled>PNGでダウンロード</button>
+            </div>
+        </div>
+        
+        <div class="preview-panel">
+            <h2>🎉 プレビュー</h2>
+            <p class="help-text">**画像を長押し（モバイル）** または **右クリック（PC）** すると、画像を保存できます。</p>
+            <div id="qrcode">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        /* --- JavaScript 機能 --- */
+        const qrDataInput = document.getElementById('qr-data');
+        const dotsTypeSelect = document.getElementById('dots-type');
+        const colorDarkInput = document.getElementById('color-dark');
+        const backgroundColorInput = document.getElementById('background-color');
+        const imageUploadInput = document.getElementById('image-upload');
+        const errorLevelSelect = document.getElementById('error-level');
+        const qrcodeDiv = document.getElementById('qrcode');
+        const downloadBtn = document.getElementById('download-btn');
+        const generateBtn = document.getElementById('generate-btn');
+
+        let uploadedImageBase64 = ''; 
+        const QR_CODE_SIZE = 300; 
+
+        // qr-code-stylingのインスタンスを作成 (Canvasに描画)
+        const qrCode = new QRCodeStyling({
+            width: QR_CODE_SIZE,
+            height: QR_CODE_SIZE,
+            type: 'canvas', // Canvasとして描画
+            data: qrDataInput.value, 
+            image: "",
+            dotsOptions: { color: colorDarkInput.value, type: "square" },
+            backgroundOptions: { color: backgroundColorInput.value },
+            imageOptions: { crossOrigin: "anonymous", margin: 5 },
+            qrOptions: { errorCorrectionLevel: 'H' }
+        });
+
+        // qr-code-stylingは一時的に描画するためのプレースホルダ
+        const tempDiv = document.createElement('div');
+        qrCode.append(tempDiv);
+        
+        /**
+         * QRコードを生成・更新し、長押し対応の<img>タグに変換する
+         */
+        function generateQRCode() {
+            const data = qrDataInput.value.trim() || ' '; 
+            const darkColor = colorDarkInput.value;
+            const backgroundColor = backgroundColorInput.value;
+            const dotsType = dotsTypeSelect.value;
+            const errorLevel = errorLevelSelect.value;
+            const logoImage = uploadedImageBase64; 
+
+            // QRコードのオプションを更新
+            qrCode.update({
+                data: data,
+                image: logoImage, 
+                dotsOptions: { color: darkColor, type: dotsType },
+                backgroundOptions: { color: backgroundColor },
+                qrOptions: { errorCorrectionLevel: errorLevel }
+            });
+            
+            // --- 長押し対応のための画像変換処理 ---
+            // 描画が完了するのを待つ (非同期処理として扱う)
+            setTimeout(() => {
+                // Canvas要素を取得
+                const canvas = tempDiv.querySelector('canvas');
+                
+                if (canvas) {
+                    // Canvasの内容をPNGのデータURLに変換
+                    const dataURL = canvas.toDataURL("image/png");
+                    
+                    // 既存のコンテンツをクリア
+                    qrcodeDiv.innerHTML = '';
+                    
+                    // 新しい<img>タグを作成し、データURLを設定
+                    const img = document.createElement('img');
+                    img.src = dataURL;
+                    img.alt = 'Generated QR Code';
+                    img.width = QR_CODE_SIZE;
+                    img.height = QR_CODE_SIZE;
+                    
+                    // <img>タグをプレビューエリアに追加
+                    qrcodeDiv.appendChild(img);
+                } else {
+                    qrcodeDiv.innerHTML = 'QRコードを生成できませんでした。';
+                }
+            }, 100); // 短い遅延を設けて描画完了を待つ
+
+            downloadBtn.disabled = false;
+        }
+        
+        /**
+         * 画像ファイルをBase64データURLに変換する (ロゴ埋め込み用)
+         */
+        imageUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImageBase64 = e.target.result;
+                    generateQRCode(); 
+                };
+                reader.readAsDataURL(file); 
+            } else {
+                uploadedImageBase64 = '';
+                generateQRCode();
+            }
+        });
+
+        /**
+         * QRコード (PNG) をダウンロードする
+         */
+        function downloadQRCode() {
+            qrCode.download({ 
+                name: `custom-qr-code-${QR_CODE_SIZE}px`, 
+                extension: "png" 
+            });
+        }
+
+        // イベントリスナーの追加
+        document.addEventListener('DOMContentLoaded', generateQRCode);
+        generateBtn.addEventListener('click', generateQRCode);
+        downloadBtn.addEventListener('click', downloadQRCode);
+
+        // ユーザー体験向上のため、入力変更時に自動で更新
+        qrDataInput.addEventListener('input', generateQRCode);
+        dotsTypeSelect.addEventListener('change', generateQRCode);
+        colorDarkInput.addEventListener('input', generateQRCode);
+        backgroundColorInput.addEventListener('input', generateQRCode);
+        errorLevelSelect.addEventListener('change', generateQRCode);
+        
+    </script>
+</body>
+</html>
