@@ -16,7 +16,41 @@
             overflow-x: hidden;
         }
         .header { background-color: #ffffff; padding: 20px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); text-align: center; }
-        /* .search-container, .search-input, .search-icon は削除 */
+
+        /* --- 検索機能の追加スタイル --- */
+        .search-container {
+            width: 90%;
+            max-width: 600px;
+            margin: 0 auto 10px;
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 20px;
+            border: 2px solid #ccc;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .search-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        /* ツール選択後、検索バーを非表示にする */
+        .hide-list .search-container {
+            display: none;
+        }
+        /* ------------------------------- */
+
         .main-content { width: 90%; max-width: 1200px; margin: 30px auto; padding: 20px; transition: opacity 0.3s; }
         .category-section { 
             background-color: #ffffff; 
@@ -203,7 +237,8 @@
     <div id="tool-list">
         <header class="header">
             <div class="search-container">
-                
+                <input type="text" id="searchInput" class="search-input" placeholder="ツール名、キーワードで検索...">
+                <span class="material-icons search-icon">search</span>
             </div>
         </header>
 
@@ -213,7 +248,40 @@
         </main>
     </div>
 
-    <script src="toolData.js"></script>
+    <script>
+    const allToolData = [
+        {
+            id: 'category-util',
+            name: '🔢 計算・変換・日常ツール',
+            tools: [
+                { id: 'tool-moji', name: '文字数カウント', url: '/tools/moji.html', description: '文章の文字数、単語数を瞬時に測定。', keywords: '文字数 カウント 文章 測定', kana: 'もじすうかうんといもじすう' },
+                { id: 'tool-qr', name: 'QRコード生成', url: '/tools/qr.html', description: 'URLやテキストからQRコードを作成。', keywords: 'QRコード 生成 作成 リンク URL', kana: 'きゅーあーるこーどきゅーあーる' },
+                { id: 'tool-pass', name: 'パスワード生成', url: '/tools/pass.html', description: '強力で安全なパスワードを自動生成。', keywords: 'パスワード 生成 作成 セキュリティ 鍵', kana: 'ぱすわーどせいせいぱすわーど' },
+                { id: 'tool-unit', name: '単位変換ツール', url: '/tools/unit.html', description: '長さ、重さ、温度などの単位を相互変換。', keywords: '単位 変換 計算 長さ 重さ 温度', kana: 'たんいへんかんつーるたんいへんかん' }
+            ]
+        },
+        {
+            id: 'category-design',
+            name: '🎨 画像・デザイン・クリエイティブ',
+            tools: [
+                { id: 'tool-color', name: 'カラーピッカー', url: '/tools/color.html', description: '画面上の色やコードから色を選択・変換。', keywords: 'カラーピッカー 色 コード HEX RGB デザイン', kana: 'からーぴっかーからー' },
+                { id: 'tool-resize', name: '画像サイズ変更', url: '/tools/resize.html', description: '画像の縦横比を維持してリサイズ。', keywords: '画像 サイズ 変更 リサイズ 縮小', kana: 'がぞうさいずへんこうがぞう' },
+                { id: 'tool-pdf', name: 'PDF結合・分割', url: '/tools/pdf.html', description: '複数のPDFファイルをまとめたり、分割したり。', keywords: 'PDF 結合 分割 ファイル 編集', kana: 'ぴーでぃーえふけつごうぶんかつぴーでぃーえふ' },
+                { id: 'tool-bgremove', name: '背景透過処理', url: '/tools/bgremove.html', description: '写真から背景を自動で削除。', keywords: '背景 透過 処理 削除 写真', kana: 'はいけいとうかしょりはけい' }
+            ]
+        },
+        {
+            id: 'category-game',
+            name: '🕹️ ゲーム＆エンタメ',
+            tools: [
+                { id: 'game-othello', name: 'オセロ', url: '/games/othello.html', description: 'コンピューターまたは友達と対戦。', keywords: 'オセロ リバーシ ゲーム 対戦 ボード', kana: 'おせろりばーし' },
+                { id: 'game-tetris', name: 'テトリス', url: 'https://donguri-5656.github.io/donguri/docs/menu4.html', description: '定番のブロックパズルゲーム。', keywords: 'テトリス パズル ブロック ゲーム', kana: 'てとるすぱずる' },
+                { id: 'game-3dmaze', name: '3D迷路', url: '/games/3dmaze.html', description: '一人称視点で出口を探す立体迷路。', keywords: '3D 迷路 メイズ ゲーム 立体', kana: 'すりーでーめいろめいろ' },
+                { id: 'game-janken', name: 'じゃんけん', url: '/games/janken.html', description: 'シンプルなオンラインじゃんけんゲーム。', keywords: 'じゃんけん 運試し ゲーム', kana: 'じゃんけんうんたなめし' }
+            ]
+        }
+    ];
+    </script>
 
     <script>
         const selectedToolContainer = document.getElementById('selectedToolContainer');
@@ -223,7 +291,7 @@
         const returnToTopButton = document.getElementById('returnToTopButton');
         const categoryTabsContainer = document.getElementById('categoryTabs');
         const menuList = document.getElementById('menuList');
-        // const searchInput = document.getElementById('searchInput'); // 削除
+        const searchInput = document.getElementById('searchInput'); // 検索Inputを取得
         const dynamicToolSections = document.getElementById('dynamicToolSections');
 
         let currentToolId = '';
@@ -232,12 +300,22 @@
         // 外部ファイルから読み込まれたallToolDataを使用
         const allCategoriesData = allToolData; 
 
+        // ひらがな・カタカナを区別せず検索するための正規化関数
+        function normalizeKana(str) {
+            if (!str) return '';
+            return str.replace(/[\u30a1-\u30f6]/g, function(match) {
+                const chr = match.charCodeAt(0) - 0x60;
+                return String.fromCharCode(chr);
+            });
+        }
+
         function createToolCard(tool, categoryId) {
             const card = document.createElement('a');
             card.href = '#';
             card.classList.add('tool-card', 'tool-select');
-            // card.setAttribute('data-keywords', tool.keywords); // 削除
-            // card.setAttribute('data-kana', tool.kana); // 削除
+            // 検索用のデータを属性に追加
+            card.setAttribute('data-keywords', (tool.name + ' ' + tool.description + ' ' + tool.keywords).toLowerCase()); 
+            card.setAttribute('data-kana', normalizeKana(tool.kana)); 
             card.setAttribute('data-url', tool.url);
             card.setAttribute('data-name', tool.name);
             card.setAttribute('data-id', tool.id);
@@ -282,6 +360,7 @@
                 section.id = category.id;
                 // data-category-nameにはアイコンを含めたカテゴリ名をそのまま使用
                 section.setAttribute('data-category-name', category.name); 
+                section.setAttribute('data-keywords', category.name.toLowerCase()); // 検索用にカテゴリ名も追加
 
                 section.innerHTML = `
                     <h2 class="category-title">${category.name}</h2>
@@ -314,11 +393,55 @@
         // 初回ロード時に動的生成を実行
         createToolSections();
         
-        // 再度DOM要素を取得し直す
+        // 再度DOM要素を取得し直す (検索対象になるため)
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
         
+        // --- 検索実行ロジック ---
+        function updateToolVisibility(query) {
+            const normalizedQuery = normalizeKana(query.toLowerCase());
+            let foundToolsInCategory = {};
+
+            // ツールカードの表示/非表示を決定
+            toolCards.forEach(card => {
+                const keywords = card.getAttribute('data-keywords');
+                const kana = card.getAttribute('data-kana');
+                const categoryId = card.parentElement.parentElement.id; // tool-grid -> category-section
+                
+                // ツール名、キーワード、ひらがな/カタナ正規化のいずれかにキーワードが含まれるか
+                const match = keywords.includes(normalizedQuery) || kana.includes(normalizedQuery);
+                
+                if (match) {
+                    card.classList.remove('tool-card-hidden');
+                    // 該当するツールがあったカテゴリを記録
+                    foundToolsInCategory[categoryId] = true;
+                } else {
+                    card.classList.add('tool-card-hidden');
+                }
+            });
+
+            // カテゴリセクションの表示/非表示を決定
+            sections.forEach(section => {
+                const categoryId = section.id;
+                const categoryKeywords = section.getAttribute('data-keywords');
+                
+                // カテゴリ名自体が検索に引っかかる、または、そのカテゴリ内に表示されたツールカードがある
+                const categoryMatch = categoryKeywords.includes(normalizedQuery) || foundToolsInCategory[categoryId];
+
+                if (categoryMatch || query.trim() === '') {
+                    section.classList.remove('category-hidden');
+                } else {
+                    section.classList.add('category-hidden');
+                }
+            });
+        }
+
+        // 検索入力時のイベントリスナー
+        searchInput.addEventListener('keyup', function() {
+            updateToolVisibility(this.value);
+        });
+
         // --- ツール選択時の処理 (ロジックは変更なし) ---
         function selectTool(url, name, categoryId, toolId) {
             currentToolId = toolId;
@@ -326,7 +449,8 @@
             toolContent.src = url;
 
             selectedToolContainer.style.display = 'flex';
-            document.body.classList.add('hide-list');
+            // ツールを選択したら検索バーを非表示にするため、クラスを追加
+            document.body.classList.add('hide-list'); 
             
             // メニューを必ず表示状態に戻す
             selectedToolContainer.classList.remove('menu-hidden');
@@ -388,20 +512,22 @@
             }
         }
         
-        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (検索クリア処理を削除) ---
+        // --- 最初のメニュー（ツール一覧）に戻るボタンの機能 (検索クリア処理を再追加) ---
         returnToTopButton.addEventListener('click', function() {
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
             if (confirmation) {
                 selectedToolContainer.style.display = 'none';
                 selectedToolContainer.classList.remove('dropdown-open', 'menu-hidden');
-                document.body.classList.remove('hide-list');
+                // 検索バーを再表示するため、クラスを削除
+                document.body.classList.remove('hide-list'); 
                 toolContent.src = 'about:blank'; 
                 currentToolId = '';
                 currentCategoryId = '';
                 categoryTabs.forEach(tab => tab.classList.remove('active'));
                 
-                // searchInput.value = ''; // 削除
+                // 検索をクリアして全ツールを表示状態に戻す
+                searchInput.value = ''; 
                 sections.forEach(s => s.classList.remove('category-hidden'));
                 document.querySelectorAll('.tool-card-hidden').forEach(c => c.classList.remove('tool-card-hidden'));
             }
@@ -433,12 +559,6 @@
                 }
             }
         });
-
-        // --- 検索機能の関連コードをすべて削除 ---
-        /*
-        function normalizeKana(str) { ... }
-        searchInput.addEventListener('keyup', function() { ... });
-        */
     </script>
 
 </body>
