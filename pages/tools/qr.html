@@ -224,6 +224,11 @@
         const qrcodeDiv = document.getElementById('qrcode');
         const downloadBtn = document.getElementById('download-btn');
         const generateBtn = document.getElementById('generate-btn');
+        
+     document.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+ 
 
         let uploadedImageBase64 = ''; 
         const QR_CODE_SIZE = 300; 
