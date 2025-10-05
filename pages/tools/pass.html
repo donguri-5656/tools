@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多機能パスワード生成ツール - 修正版</title>
+    <style>
+        /* --- CSSセクション --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #007bff;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input[type="number"],
+        button,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+
+        input[type="number"],
+        textarea {
+            border: 1px solid #ccc;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        /* --- レイアウト修正箇所: result-box --- */
+        .result-box {
+            display: flex; /* Flexboxで子要素を横並びにする */
+            margin-top: 25px;
+            align-items: stretch; /* 子要素の高さを合わせる（ボタンとテキストエリア） */
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #password-display {
+            flex-grow: 1;
+            padding: 12px;
+            background-color: #e9ecef;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1em;
+            word-break: break-all;
+            /* 高さをボタンと同じにするため、paddingのみで高さを制御 */
+            display: flex;
+            align-items: center;
+            min-height: 44px; /* ボタンの高さに合わせて調整 */
+        }
+
+        #copy-button {
+            /* コピーボタンのスタイル調整 */
+            width: auto;
+            padding: 12px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 0; 
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex-shrink: 0; /* 縮小させない */
+            margin-top: 0; /* フォームのボタンと区別するためにマージンをリセット */
+        }
+
+        #copy-button:hover {
+            background-color: #0056b3;
+        }
+
+        .feedback {
+            text-align: center;
+            margin-top: 15px;
+            color: #28a745;
+            font-weight: bold;
+        }
+        /* --- CSSセクション終了 --- */
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🔑 カスタムパスワード生成ツール</h1>
+
+        <div class="setting-group">
+            <label for="length">パスワードの長さ（4〜128）:</label>
+            <input type="number" id="length" value="12" min="4" max="128">
+        </div>
+
+        <div class="setting-group checkbox-group">
+            <label>使用文字の選択:</label>
+            <label>
+                <input type="checkbox" id="uppercase" checked>
+                英大文字 (A-Z)
+            </label>
+            <label>
+                <input type="checkbox" id="lowercase" checked>
+                英小文字 (a-z)
+            </label>
+            <label>
+                <input type="checkbox" id="numbers" checked>
+                数字 (0-9)
+            </label>
+        </div>
+        
+        <div class="setting-group">
+            <label for="custom-chars">カスタム文字セット（例: !@#$&*_-.）</label>
+            <textarea id="custom-chars" placeholder="使用したい記号や特殊文字を入力してください（例: !@#$&*_-.）"></textarea>
+            <label>
+                <input type="checkbox" id="use-custom" style="margin-top: 10px;">
+                上記カスタム文字を使用する
+            </label>
+        </div>
+
+        <button id="generate-button">パスワードを生成</button>
+
+        <div class="result-box">
+            <div id="password-display">設定して「生成」ボタンを押してください</div>
+            <button id="copy-button">コピー</button>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+    </div>
+
+    <script>
+        /* --- JavaScriptセクション --- */
+        
+        // 1. ダブルクリックズーム防止処理
+        // document.bodyに適用することで、より広範囲でズームを防止します
+        document.body.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const lengthInput = document.getElementById('length');
+            const uppercaseCheckbox = document.getElementById('uppercase');
+            const lowercaseCheckbox = document.getElementById('lowercase');
+            const numbersCheckbox = document.getElementById('numbers');
+            const useCustomCheckbox = document.getElementById('use-custom');
+            const customCharsInput = document.getElementById('custom-chars');
+            const generateButton = document.getElementById('generate-button');
+            const passwordDisplay = document.getElementById('password-display');
+            const copyButton = document.getElementById('copy-button');
+            const feedback = document.getElementById('feedback');
+
+            // 基本の文字セットを定義
+            const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const lower = 'abcdefghijklmnopqrstuvwxyz';
+            const num = '0123456789';
+
+            /**
+             * 設定に基づいてパスワードを生成する関数
+             * @returns {string} 生成されたパスワード
+             */
+            function generatePassword() {
+                let allChars = '';
+                let mustInclude = []; 
+                let password = '';
+                
+                // 選択された文字セットを構築
+                if (uppercaseCheckbox.checked) {
+                    allChars += upper;
+                    mustInclude.push(upper[Math.floor(Math.random() * upper.length)]);
+                }
+                if (lowercaseCheckbox.checked) {
+                    allChars += lower;
+                    mustInclude.push(lower[Math.floor(Math.random() * lower.length)]);
+                }
+                if (numbersCheckbox.checked) {
+                    allChars += num;
+                    mustInclude.push(num[Math.floor(Math.random() * num.length)]);
+                }
+                
+                // カスタム文字セットの処理
+                if (useCustomCheckbox.checked) {
+                    const custom = customCharsInput.value.trim();
+                    if (custom.length > 0) {
+                        allChars += custom;
+                        mustInclude.push(custom[Math.floor(Math.random() * custom.length)]);
+                    }
+                }
+
+                // 文字タイプが一つも選択されていない場合は警告
+                if (allChars === '') {
+                    alert('パスワードを生成するには、少なくとも1種類の文字タイプを選択してください。');
+                    return '';
+                }
+
+                const length = parseInt(lengthInput.value);
+                
+                // 長さのバリデーション
+                if (length < 4 || length > 128 || isNaN(length)) {
+                    alert('パスワードの長さは4から128の間で設定してください。');
+                    return '';
+                }
+
+                // 長さが必須文字数より短い場合のチェック
+                if (length < mustInclude.length) {
+                    alert(`パスワードの長さは、選択した文字タイプ数（${mustInclude.length}）以上にしてください。`);
+                    return '';
+                }
+                
+                // 必須文字を先にパスワードに含める
+                password = mustInclude.join('');
+
+                // 残りの文字をランダムに生成して追加
+                const remainingLength = length - mustInclude.length;
+                for (let i = 0; i < remainingLength; i++) {
+                    const randomIndex = Math.floor(Math.random() * allChars.length);
+                    password += allChars[randomIndex];
+                }
+
+                // パスワードをシャッフル
+                password = password.split('').sort(() => 0.5 - Math.random()).join('');
+
+                return password;
+            }
+
+            // パスワード生成ボタンのイベントリスナー
+            generateButton.addEventListener('click', () => {
+                const newPassword = generatePassword();
+                if (newPassword) {
+                    passwordDisplay.textContent = newPassword;
+                    feedback.textContent = '新しいパスワードを生成しました！';
+                    setTimeout(() => feedback.textContent = '', 3000);
+                } else {
+                    passwordDisplay.textContent = 'エラー: 設定を確認してください';
+                    feedback.textContent = '';
+                }
+            });
+
+            // コピーボタンのイベントリスナー
+            copyButton.addEventListener('click', () => {
+                const password = passwordDisplay.textContent;
+                
+                if (password === '設定して「生成」ボタンを押してください' || password.startsWith('エラー')) {
+                    return; 
+                }
+
+                // クリップボードAPIを使用してコピー
+                navigator.clipboard.writeText(password).then(() => {
+                    feedback.textContent = 'パスワードをクリップボードにコピーしました！';
+                    copyButton.textContent = 'コピー済み';
+                    
+                    // フィードバックメッセージとボタンテキストをリセット
+                    setTimeout(() => {
+                        feedback.textContent = '';
+                        copyButton.textContent = 'コピー';
+                    }, 2000);
+
+                }).catch(err => {
+                    feedback.textContent = 'コピーに失敗しました。手動でコピーしてください。';
+                    console.error('Copy failed: ', err);
+                });
+            });
+        });
+        /* --- JavaScriptセクション終了 --- */
+    </script>
+</body>
+</html>
