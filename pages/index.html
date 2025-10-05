@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多機能オンラインツール＆ゲーム集</title>
+    <title>いろいろ集</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         /* (CSS部分は前回のものから変更なし - 検索、ツール表示エリア、レスポンシブ対応) */
@@ -48,7 +48,8 @@
         /* エラー表示用のスタイル */
         .error-message { 
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            height: 100%; text-align: center; color: #dc3545; font-size: 20px;
+            height: calc(100vh - 50px); text-align: center; color: #dc3545; font-size: 20px;
+            background-color: #fff8f8;
         }
     </style>
 </head>
@@ -97,9 +98,6 @@
     <script src="toolData.js"></script>
 
     <script>
-        // -----------------------------------------------------
-        // 外部ファイルから読み込まれたallToolDataを使用
-        // -----------------------------------------------------
         const selectedToolContainer = document.getElementById('selectedToolContainer');
         const toolContent = document.getElementById('toolContent');
         const hideMenuButton = document.getElementById('hideMenuButton'); 
@@ -113,16 +111,14 @@
 
         let currentToolId = '';
         let currentCategoryId = '';
-        let allToolsMap = new Map(); // IDからツール情報全体を取得するためのマップ
+        let allToolsMap = new Map(); 
 
         // -----------------------------------------------------
         // ユーティリティ関数
         // -----------------------------------------------------
 
-        // ひらがな・カタカナを区別せず検索するための正規化関数
         function normalizeKana(str) {
             if (!str) return '';
-            // カタカナをひらがなに変換
             str = str.replace(/[\u30a1-\u30f6]/g, function(match) {
                 const chr = match.charCodeAt(0) - 0x60;
                 return String.fromCharCode(chr);
@@ -130,7 +126,6 @@
             return str;
         }
 
-        // IDからツールオブジェクトを検索する関数
         function getToolById(toolId) {
             if (allToolsMap.size === 0) {
                 allCategoriesData.forEach(category => {
@@ -142,14 +137,34 @@
             return allToolsMap.get(toolId);
         }
 
-        // iFrameにエラーメッセージを表示するためのHTML
         const errorHtml = (toolName) => `
-            <div class="error-message">
-                <span class="material-icons" style="font-size: 48px; margin-bottom: 10px;">error_outline</span>
-                <p><strong>「${toolName}」</strong></p>
-                <p>ツールのファイルが見つからないか、<br>アクセスがブロックされました。</p>
-                <p style="font-size: 14px; margin-top: 20px;">サーバー設定またはファイルパスを確認してください。</p>
-            </div>
+            <!DOCTYPE html>
+            <html lang="ja">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>ファイルが見つかりません</title>
+                <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+                <style>
+                    body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #fff8f8; color: #333; }
+                    .error-message-content { text-align: center; padding: 40px; border: 1px solid #dc3545; border-radius: 8px; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+                    .error-icon { font-size: 60px; color: #dc3545; margin-bottom: 15px; }
+                    h1 { font-size: 24px; margin-top: 0; color: #dc3545; }
+                    p { font-size: 16px; line-height: 1.6; color: #555; }
+                </style>
+            </head>
+            <body>
+                <div class="error-message-content">
+                    <span class="material-icons error-icon">sentiment_dissatisfied</span>
+                    <h1>ページが見つかりません (404)</h1>
+                    <p>
+                        <strong>「${toolName}」</strong>ツールのファイルが<br>
+                        サーバーまたは指定されたパスに見つかりませんでした。
+                    </p>
+                    <p style="font-size: 14px; margin-top: 20px;">ファイルパス (例: ${getToolById(currentToolId) ? getToolById(currentToolId).url : '不明'}) を確認してください。</p>
+                </div>
+            </body>
+            </html>
         `;
 
         // -----------------------------------------------------
@@ -195,10 +210,9 @@
         function createToolSections() {
             dynamicToolSections.innerHTML = '';
             categoryTabsContainer.innerHTML = '';
-            allToolsMap.clear(); // マップをクリアして再構築
+            allToolsMap.clear(); 
 
             allCategoriesData.forEach(category => {
-                // 1. カテゴリセクションの生成
                 const section = document.createElement('section');
                 section.classList.add('category-section');
                 section.id = category.id;
@@ -212,7 +226,6 @@
                 
                 const toolGrid = section.querySelector('.tool-grid');
                 
-                // 2. ツールカードの生成とマップへの登録
                 category.tools.forEach(tool => {
                     toolGrid.appendChild(createToolCard(tool, category.id));
                     allToolsMap.set(tool.id, { ...tool, categoryId: category.id });
@@ -220,7 +233,6 @@
 
                 dynamicToolSections.appendChild(section);
 
-                // 3. 上部カテゴリタブの生成
                 const tab = document.createElement('div');
                 tab.classList.add('category-tab');
                 tab.textContent = category.name; 
@@ -233,10 +245,8 @@
             });
         }
 
-        // 初回ロード時に動的生成を実行
         createToolSections();
         
-        // 再度DOM要素を取得し直す (検索対象になるため)
         const toolCards = document.querySelectorAll('.tool-select');
         const categoryTabs = document.querySelectorAll('.category-tab');
         const sections = document.querySelectorAll('.category-section');
@@ -249,7 +259,6 @@
             const normalizedQuery = normalizeKana(query.toLowerCase());
             let foundToolsInCategory = {};
 
-            // ツールカードの表示/非表示を決定
             toolCards.forEach(card => {
                 const keywords = card.getAttribute('data-keywords');
                 const kana = card.getAttribute('data-kana');
@@ -265,7 +274,6 @@
                 }
             });
 
-            // カテゴリセクションの表示/非表示を決定
             sections.forEach(section => {
                 const categoryId = section.id;
                 const categoryKeywords = section.getAttribute('data-keywords');
@@ -301,46 +309,41 @@
             categoryTabs.forEach(tab => tab.classList.remove('active'));
             currentCategoryId = '';
 
-            // URLパラメーターを更新して状態を保存
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set('tool', toolId);
-            // URLを更新するが、ページのリロードは行わない
             history.pushState({ toolId: toolId }, name, newUrl.toString()); 
         }
 
-        // iFrameのエラー処理
+        // iFrameのエラー処理を調整
         toolContent.addEventListener('load', function() {
-            // iFrameが読み込まれたとき
-            // Note: 外部ドメインのコンテンツについてはSame-Origin Policyによりアクセスが制限されます
-            // ここでは、ローカルファイル（/tools/...など）が対象であると想定します
-            try {
-                // iFrameの内容にアクセス可能かチェック（クロスオリジンの場合はエラーになる）
-                if (toolContent.contentDocument && toolContent.contentDocument.body) {
-                    // bodyにエラー内容がないか、または成功しているかを確認
-                    // (具体的なファイルチェックはサーバーサイドでしか完全にはできないため、簡易的なチェック)
-                    
-                    // 例: 404エラーページの場合、その内容がiFrameに表示されるが、
-                    // その内容をホスト側JSから検出するのは困難。
-                    // 唯一の確実な方法は、iFrame内に独自のロジックを持つコンテンツ（ツール）を配置し、
-                    // ツール側から親ウィンドウに成功を通知させること。
-                    
-                    // ここでは、contentDocumentが利用できても空（または予想外のコンテンツ）の場合を簡易的にエラーとする
-                    // ただし、外部URL (例: テトリス) の場合はcontentDocumentはアクセス不可になるため、
-                    // toolContent.srcが相対パスかどうかで判定を分ける。
-                    
-                    const isLocal = toolContent.src.startsWith(window.location.origin) || toolContent.src.startsWith('/');
+            // 現在のiFrameのURLを取得
+            const currentSrc = toolContent.src;
+            const currentTool = getToolById(currentToolId);
 
-                    if (isLocal && toolContent.contentDocument.body.children.length === 0) {
-                         // ローカルパスでコンテンツが空の場合（簡易的な404チェック）
-                        const currentTool = getToolById(currentToolId);
-                        toolContent.src = 'about:blank';
-                        toolContent.contentDocument.write(errorHtml(currentTool ? currentTool.name : '選択されたツール'));
+            // ローカルパス（/tools/...や/games/...）の場合のみエラーチェックを行う
+            // 外部URL（例: テトリス）はクロスオリジンポリシーによりアクセスがブロックされるためチェックしない
+            if (currentSrc.includes('/tools/') || currentSrc.includes('/games/') || currentSrc.startsWith(window.location.origin)) {
+                try {
+                    // contentDocumentにアクセスできることを確認（クロスオリジンでないこと）
+                    const doc = toolContent.contentDocument;
+
+                    // ドキュメントの内容が空、またはブラウザが生成したエラーページ（通常はbodyが空になるか、親と同じ内容になる）
+                    // ContentDocument.location.href が現在のURLと異なる場合（リダイレクトやエラーページに遷移した場合）
+                    if (doc && doc.location.href !== currentSrc) {
+                        // 404などでブラウザが親ページを再表示しようとした場合やエラーページにリダイレクトされた場合
+                        throw new Error("Local file not found or access error.");
                     }
+                    
+                    // contentDocument.body.innerHTML が空、またはブラウザが生成したエラー内容の場合もここで検出可能だが、
+                    // 最も確実なのは、iFrameがブラウザデフォルトのエラーページを表示したときに発生するLocationの不一致を利用すること。
+
+                } catch (e) {
+                    // エラーまたはクロスオリジンポリシーによるアクセス拒否（ローカルファイルがない場合に発生しやすい）
+                    
+                    // 以前に設定したエラーコンテンツをクリアし、新しいエラーコンテンツを書き込む
+                    toolContent.src = 'about:blank';
+                    toolContent.contentDocument.write(errorHtml(currentTool ? currentTool.name : '選択されたツール'));
                 }
-                // クロスオリジンの場合はエラーチェックをスキップ（テトリスなどは問題なく表示されていると仮定）
-            } catch (e) {
-                 // クロスオリジンアクセスエラー（セキュリティ制限）
-                 // この場合はファイルが存在していると見なして、何もしない（テトリスなどの外部サイト対策）
             }
         });
 
@@ -401,7 +404,6 @@
         // ナビゲーションボタンの制御
         // -----------------------------------------------------
 
-        // メニューをしまうボタン
         hideMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.add('menu-hidden');
             selectedToolContainer.classList.remove('dropdown-open');
@@ -409,12 +411,10 @@
             currentCategoryId = '';
         });
 
-        // メニューを出すボタン
         showMenuButton.addEventListener('click', function() {
             selectedToolContainer.classList.remove('menu-hidden');
         });
 
-        // ツール一覧に戻るボタン
         returnToTopButton.addEventListener('click', function() {
             const confirmation = confirm('最初のメニューに戻りますか？\n現在使用中のツールでの作業内容は保存されない可能性があります。');
             
@@ -428,21 +428,33 @@
                 categoryTabs.forEach(tab => tab.classList.remove('active'));
                 
                 searchInput.value = ''; 
-                updateToolVisibility(''); // 検索をクリアして全ツールを表示
+                updateToolVisibility(''); 
                 
-                // URLパラメーターをクリア
                 const newUrl = new URL(window.location.href);
                 newUrl.searchParams.delete('tool');
                 history.pushState({}, 'ツール一覧', newUrl.toString());
             }
         });
         
+        // ドロップダウン外のクリックで閉じる処理
+        selectedToolContainer.addEventListener('click', function(e) {
+            const isClickInsideDropdown = e.target.closest('#menuList') || e.target.closest('.category-tab');
+            const isClickOnActionButtons = e.target.closest('#actionButtons');
+            
+            if (!isClickInsideDropdown && !isClickOnActionButtons) {
+                if (selectedToolContainer.classList.contains('dropdown-open')) {
+                    selectedToolContainer.classList.remove('dropdown-open');
+                    categoryTabs.forEach(tab => tab.classList.remove('active'));
+                    currentCategoryId = '';
+                }
+            }
+        });
+
         // -----------------------------------------------------
         // 初期化処理 (URLパラメーターからの再開)
         // -----------------------------------------------------
 
         window.onload = function() {
-            // URLパラメーターからtoolIDを取得
             const params = new URLSearchParams(window.location.search);
             const toolIdFromUrl = params.get('tool');
 
@@ -450,10 +462,8 @@
                 const toolToLoad = getToolById(toolIdFromUrl);
 
                 if (toolToLoad) {
-                    // ツールが見つかった場合、そのツールを起動
                     selectTool(toolToLoad.url, toolToLoad.name, toolToLoad.categoryId, toolToLoad.id);
                 } else {
-                    // ツールIDが無効な場合、トップページ表示 & URLからパラメーターを削除
                     const newUrl = new URL(window.location.href);
                     newUrl.searchParams.delete('tool');
                     history.replaceState({}, 'ツール一覧', newUrl.toString());
@@ -461,27 +471,27 @@
             }
         };
 
-        // ブラウザの戻る/進むボタンでパラメーターが変更された場合の処理
+        // ブラウザの戻る/進むボタンでの状態復元
         window.onpopstate = function(event) {
             const params = new URLSearchParams(window.location.search);
             const toolIdFromUrl = params.get('tool');
 
-            if (toolIdFromUrl && toolIdFromUrl !== currentToolId) {
-                // ツールが指定されているが、現在のツールと異なる場合
+            if (toolIdFromUrl) {
                 const toolToLoad = getToolById(toolIdFromUrl);
                 if (toolToLoad) {
-                    // selectToolの副作用を抑えるため、直接的にiFrameを更新
                     currentToolId = toolToLoad.id;
                     toolContent.src = toolToLoad.url;
                     selectedToolContainer.style.display = 'flex';
                     document.body.classList.add('hide-list'); 
                 }
             } else if (!toolIdFromUrl) {
-                // ツールパラメーターが削除された場合（トップページに戻った場合）
-                returnToTopButton.click();
+                // ツールパラメーターがない場合はトップに戻る処理
+                selectedToolContainer.style.display = 'none';
+                document.body.classList.remove('hide-list'); 
+                toolContent.src = 'about:blank'; 
+                currentToolId = '';
             }
         };
-
     </script>
 
 </body>
