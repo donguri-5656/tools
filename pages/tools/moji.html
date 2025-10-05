@@ -187,6 +187,12 @@
         excludedCharLabel: document.getElementById('excluded-char-count-label'),
     };
 
+    
+     document.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+ 
+
     /**
      * 文字列の推定バイト数を計算します（UTF-8エンコーディングに基づく）
      * @param {string} str - 入力文字列
