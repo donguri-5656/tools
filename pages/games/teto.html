@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>🐿️</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        body {
+            background: #d0f0ff;
+            font-family: sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+        }
+        #wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        canvas {
+            background: #ffffff;
+            border: 4px solid #a0e0ff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin: 5px;
+        }
+        #game-container {
+            position: relative;
+        }
+        #tetris {
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #ui {
+            display: grid;
+            grid-template-areas:
+                "rotL hard rotR"
+                "left . right"
+                ". down hold";
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 0 10px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn {
+            padding: 15px 0;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            background: #a0e0ff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .btn-left { grid-area: left; }
+        .btn-right { grid-area: right; }
+        .btn-rotate-left { grid-area: rotL; }
+        .btn-rotate-right { grid-area: rotR; }
+        .btn-down { grid-area: down; }
+        .btn-hard-drop { grid-area: hard; }
+        .btn-hold { grid-area: hold; }
+
+        .info {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 2px;
+            align-items: flex-start;
+        }
+        .info > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #score {
+            margin: 2px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        /* Modal Overlay */
+        #overlay, #ranking-overlay, #game-over-overlay, #pause-overlay, #difficulty-selection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* Modal Content */
+        #mode-selection-modal, #ranking-modal, #game-over-modal, #pause-modal, #difficulty-selection-modal {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 90%;
+            width: 350px;
+        }
+
+        #mode-selection-modal h2, #ranking-modal h2, #game-over-modal h2, #pause-modal h2, #difficulty-selection-modal h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        #game-over-modal p {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+
+        #mode-selection-modal button, #ranking-modal button, #game-over-modal button, #pause-modal button, #difficulty-selection-modal button {
+            display: block;
+            width: 80%;
+            padding: 15px;
+            margin: 15px auto;
+            font-size: 20px;
+            border: none;
+            border-radius: 8px;
+            background: #a0e0ff;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        #mode-selection-modal button:hover, #ranking-modal button:hover, #game-over-modal button:hover, #pause-modal button:hover, #difficulty-selection-modal button:hover {
+            background: #80cfff;
+        }
+        /* Pause Button - 画面右上に固定 */
+        #pause-button {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            width: 80px;
+            height: 40px;
+            padding: 0;
+            font-size: 16px;
+            background: #a0e0ff;
+            border: 2px solid #66b0d0;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #pause-button:hover {
+            background: #80cfff;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">スコア: 0</div>
+
+    <button id="pause-button" onclick="togglePause()" style="display: none;">一時停止</button>
+
+    <div id="wrapper">
+        <div class="info">
+            <div>
+                <p>NEXT</p>
+                <canvas id="next" width="80" height="240"></canvas>
+            </div>
+            <div id="game-container">
+                <canvas id="tetris" width="200" height="400"></canvas>
+            </div>
+            <div>
+                <p>HOLD</p>
+                <canvas id="hold" width="80" height="80"></canvas>
+            </div>
+        </div>
+        <div id="ui">
+            <button class="btn btn-rotate-left" onclick="playerRotate(false)">左回転</button>
+            <button class="btn btn-hard-drop" onclick="hardDrop()">↑</button>
+            <button class="btn btn-rotate-right" onclick="playerRotate(true)">右回転</button>
+            <button class="btn btn-left" onclick="playerMove(-1)">←</button>
+            <button class="btn btn-right" onclick="playerMove(1)">→</button>
+            <button class="btn btn-down" onmousedown="startSoftDrop()" onmouseup="stopSoftDrop()" onmouseleave="stopSoftDrop()" ontouchstart="startSoftDrop()" ontouchend="stopSoftDrop()">↓</button>
+            <button class="btn btn-hold" onclick="holdPiece()">HOLD</button>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <div id="mode-selection-modal">
+            <h2>操作モード選択</h2>
+            <button id="btn-mode-button">ボタン操作</button>
+            <button id="btn-mode-gesture">ジェスチャー操作</button>
+        </div>
+    </div>
+
+    <div id="difficulty-selection-overlay" style="display: none;">
+        <div id="difficulty-selection-modal">
+            <h2>難易度選択</h2>
+            <button id="btn-difficulty-easy" data-difficulty="easy">かんたん</button>
+            <button id="btn-difficulty-normal" data-difficulty="normal">ふつう</button>
+            <button id="btn-difficulty-hard" data-difficulty="hard">むずかしい</button>
+            <button id="btn-back-to-mode-selection">戻る</button>
+        </div>
+    </div>
+
+    <div id="game-over-overlay" style="display: none;">
+        <div id="game-over-modal">
+            <h2>ゲームオーバー！</h2>
+            <p id="final-score-display"></p>
+            <p id="lines-cleared-display"></p>
+            <p id="max-combo-display"></p>
+            <button onclick="hideGameOverModalAndShowMenu()">メニューに戻る</button>
+        </div>
+    </div>
+
+    <div id="pause-overlay" style="display: none;">
+        <div id="pause-modal">
+            <h2>一時停止中</h2>
+            <button onclick="resumeGame()">ゲーム再開</button>
+            <button onclick="endGame()">ゲーム終了</button>
+        </div>
+    </div>
+
+    <script>
+
+        const canvas = document.getElementById('tetris');
+        const context = canvas.getContext('2d');
+        context.scale(20, 20); // 1マス20x20ピクセル
+
+        const nextCanvas = document.getElementById('next');
+        const nextCtx = nextCanvas.getContext('2d');
+        nextCtx.scale(20, 20); // 1マス20x20ピクセル
+
+        const holdCanvas = document.getElementById('hold');
+        const holdCtx = holdCanvas.getContext('2d');
+        holdCtx.scale(20, 20); // 1マス20x20ピクセル
+
+        let score = 0;
+        let linesCleared = 0;
+        let combo = -1;
+        let maxCombo = 0;
+        let currentControlMode = 'button'; // 'button', 'gesture'
+        let currentDifficulty = 'normal'; // 'easy', 'normal', 'hard'
+        let perfectClearBonus = false; // Perfect Clear判定用フラグ
+
+     document.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+
+
+        const scoreElem = document.getElementById('score');
+        const pauseButton = document.getElementById('pause-button');
+        const pauseOverlay = document.getElementById('pause-overlay');
+
+        const colors = {
+            'I': '#66CCFF', // 水色
+            'O': '#FFCC66', // オレンジがかった黄色
+            'T': '#CC66FF', // 紫
+            'S': '#66FF66', // 緑
+            'Z': '#FF6666', // 赤
+            'J': '#6666FF', // 青
+            'L': '#FF9966', // オレンジ
+            'ghost': 'rgba(128, 128, 128, 0.4)', // ゴーストピース (半透明グレー、背景色に馴染むように調整)
+            'border': '#a0e0ff', // border色
+        };
+
+        function createMatrix(w, h) {
+            const matrix = [];
+            while (h--) matrix.push(new Array(w).fill(0));
+            return matrix;
+        }
+
+        function drawMatrix(matrix, offset, ctx, type, alpha = 1) {
+            const baseColor = (type === 'ghost') ? colors['ghost'] : colors[type];
+
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        ctx.fillStyle = baseColor;
+                        ctx.globalAlpha = alpha;
+                        ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+                        ctx.strokeStyle = colors['border'];
+                        ctx.lineWidth = 0.03;
+                        ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
+                        ctx.globalAlpha = 1;
+                    }
+                });
+            });
+        }
+
+        function merge(arena, player) {
+            player.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        arena[y + player.pos.y][x + player.pos.x] = player.type;
+                    }
+                });
+            });
+        }
+
+        function collide(arena, player) {
+            const [m, o] = [player.matrix, player.pos];
+            for (let y = 0; y < m.length; ++y) {
+                for (let x = 0; x < m[y].length; ++x) {
+                    if (m[y][x] !== 0 &&
+                        ((arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0 ||
+                        y + o.y >= arena.length ||
+                        x + o.x < 0 || x + o.x >= arena[0].length)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function rotate(matrix, rightRotate = true) {
+            const newMatrix = createMatrix(matrix.length, matrix[0].length);
+            if (rightRotate) {
+                for (let y = 0; y < matrix.length; y++) {
+                    for (let x = 0; x < matrix[y].length; x++) {
+                        newMatrix[x][matrix.length - 1 - y] = matrix[y][x];
+                    }
+                }
+            } else { // Counter-clockwise rotation
+                for (let y = 0; y < matrix.length; y++) {
+                    for (let x = 0; x < matrix[y].length; x++) {
+                        newMatrix[matrix[y].length - 1 - x][y] = matrix[y][x];
+                    }
+                }
+            }
+            return newMatrix;
+        }
+
+        // --- SRS (Super Rotation System) Kick Data ---
+        const SRS_KICKS_JLSZT = [
+            [[0,0], [-1,0], [-1,-1], [0,2], [-1,2]],     // 0 >> R (current state 0, next state R)
+            [[0,0], [1,0], [1,1], [0,-2], [1,-2]],       // R >> 2
+            [[0,0], [1,0], [1,-1], [0,2], [1,2]],        // 2 >> L
+            [[0,0], [-1,0], [-1,1], [0,-2], [-1,-2]]     // L >> 0
+        ];
+
+        const SRS_KICKS_I = [
+            [[0,0], [-2,0], [1,0], [-2,1], [1,-2]],     // 0 >> R (current state 0, next state R)
+            [[0,0], [-1,0], [2,0], [-1,-2], [2,1]],     // R >> 2
+            [[0,0], [2,0], [-1,0], [2,-1], [-1,2]],     // 2 >> L
+            [[0,0], [1,0], [-2,0], [1,2], [-2,-1]]      // L >> 0
+        ];
+        
+        const SRS_KICKS_JLSZT_CCW = [
+            [[0,0], [1,0], [1,-1], [0,2], [1,2]],     // 0 >> L (corresponds to R >> 0 negated x)
+            [[0,0], [1,0], [1,1], [0,-2], [1,-2]],    // L >> 2 (corresponds to 2 >> R negated x)
+            [[0,0], [-1,0], [-1,-1], [0,2], [-1,2]],  // 2 >> R (corresponds to 0 >> R negated x)
+            [[0,0], [-1,0], [-1,1], [0,-2], [-1,-2]]  // R >> 0 (corresponds to L >> 0 negated x)
+        ];
+
+        const SRS_KICKS_I_CCW = [
+            [[0,0], [2,0], [-1,0], [2,1], [-1,-2]],  // 0 >> L (corresponds to R >> 0 negated x)
+            [[0,0], [1,0], [-2,0], [1,-2], [-2,1]],  // L >> 2 (corresponds to 2 >> R negated x)
+            [[0,0], [-2,0], [1,0], [-2,-1], [1,2]],  // 2 >> R (corresponds to 0 >> R negated x)
+            [[0,0], [-1,0], [2,0], [-1,2], [-2,-1]]    // R >> 0 (corresponds to L >> 0 negated x)
+        ];
+
+        function checkTSpin(originalPos, newPos, currentMatrix, arena) {
+            if (player.type !== 'T') return false;
+
+            // Tミノの回転中心からの相対座標でコーナーを定義
+            // Tミノの回転中心は matrix[1][1]
+            // 各回転状態でのTミノの形状とコーナーの定義による
+            // 一般的には、3x3のTミノのコーナーは (0,0), (2,0), (0,2), (2,2)
+            // Tミノの回転中心のセルが (player.pos.x + 1, player.pos.y + 1) にあると仮定
+
+            const cornersToCheck = [
+                {dx: 0, dy: 0}, // 左上
+                {dx: 2, dy: 0}, // 右上
+                {dx: 0, dy: 2}, // 左下
+                {dx: 2, dy: 2}  // 右下
+            ];
+
+            let blockedCorners = 0;
+            for (const offset of cornersToCheck) {
+                const checkX = player.pos.x + offset.dx;
+                const checkY = player.pos.y + offset.dy;
+
+                // 盤面の外、または埋まっているブロックであればブロックと判定
+                if (checkY < 0 || checkY >= arena.length || checkX < 0 || checkX >= arena[0].length || arena[checkY][checkX] !== 0) {
+                    blockedCorners++;
+                }
+            }
+            
+            // T-Spinの条件: 3つのコーナーがブロックされていること
+            return blockedCorners >= 3;
+        }
+
+
+        function playerRotate(isRight = true) {
+            if (isPaused) return;
+
+            const clonedMatrix = player.matrix.map(row => [...row]);
+            const originalPos = { x: player.pos.x, y: player.pos.y };
+            const originalRotState = player.rotState;
+
+            const rotated = rotate(player.matrix, isRight);
+            player.matrix = rotated;
+
+            let kicks;
+            let currentKicksIndex;
+
+            if (player.type === 'I') {
+                kicks = isRight ? SRS_KICKS_I : SRS_KICKS_I_CCW;
+            } else { // J, L, S, Z, T
+                kicks = isRight ? SRS_KICKS_JLSZT : SRS_KICKS_JLSZT_CCW;
+            }
+
+            currentKicksIndex = originalRotState;
+            
+            const kickTableToUse = isRight ? kicks : kicks; 
+
+            let rotatedSuccessfully = false;
+            let finalKickOffset = {x: 0, y: 0}; 
+
+            for (let i = 0; i < kickTableToUse[currentKicksIndex].length; i++) {
+                const [offsetX, offsetY] = kickTableToUse[currentKicksIndex][i];
+                player.pos.x = originalPos.x + offsetX;
+                player.pos.y = originalPos.y + offsetY;
+
+                if (!collide(arena, player)) {
+                    rotatedSuccessfully = true;
+                    finalKickOffset = {x: offsetX, y: offsetY};
+                    // Update rotation state based on successful rotation
+                    if (isRight) {
+                        player.rotState = (originalRotState + 1) % 4;
+                    } else {
+                        player.rotState = (originalRotState + 3) % 4; // (originalRotState - 1 + 4) % 4
+                    }
+                    break;
+                }
+            }
+
+            if (rotatedSuccessfully) {
+                player.isTSpin = checkTSpin(originalPos, player.pos, player.matrix, arena);
+                // 接地中に回転したら猶予をリセット
+                if (player.isGrounded) {
+                    lockDelayCounter = 0;
+                    lockDelayMovesCounter++; // <--- ここでインクリメント
+                }
+            } else {
+                // Rotation failed, revert to original state
+                player.matrix = clonedMatrix;
+                player.pos = originalPos;
+                player.rotState = originalRotState;
+                player.isTSpin = false; // 回転失敗時はT-Spinではない
+            }
+        }
+
+
+        function playerDrop() {
+            if (isPaused) return false;
+
+            player.pos.y++;
+            if (collide(arena, player)) {
+                player.pos.y--;
+                // ここで初めて接地した場合
+                if (!player.isGrounded) {
+                    player.isGrounded = true;
+                    lockDelayCounter = 0; // タイマーリセット
+                    lockDelayMovesCounter = 0; // 操作回数リセット
+                }
+                return true; // 接地している
+            }
+            player.isGrounded = false; // 接地していない
+            lockDelayCounter = 0; // 落下中はタイマーリセット
+            lockDelayMovesCounter = 0; // 落下中は操作回数リセット
+            return false; // 接地していない
+        }
+
+        let softDropInterval = null;
+        function startSoftDrop() {
+            if (isPaused) return;
+            if (!softDropInterval) {
+                // ソフトドロップが開始されたら、接地猶予のカウンターをリリセットしない
+                // 接地猶予はplayerDrop()がtrueを返した時にのみ有効
+                playerDrop(); // 最初の1マス落下
+                softDropInterval = setInterval(() => {
+                    const landed = playerDrop();
+                    if (landed) {
+                        // 接地している場合は自動固定はしない
+                    }
+                }, 50); // ソフトドロップの速度
+            }
+        }
+
+        function stopSoftDrop() {
+            clearInterval(softDropInterval);
+            softDropInterval = null;
+        }
+
+        function hardDrop() {
+            if (isPaused) return;
+
+            while (!collide(arena, player)) {
+                player.pos.y++;
+            }
+            player.pos.y--;
+            merge(arena, player);
+            const linesClearedThisDrop = arenaSweep();
+            linesCleared += linesClearedThisDrop;
+            calculateScore(linesClearedThisDrop);
+            playerReset();
+            canHold = true;
+            dropCounter = 0;
+            player.isTSpin = false;
+        }
+
+        function playerMove(dir) {
+            if (isPaused) return false;
+
+            const originalX = player.pos.x;
+            player.pos.x += dir;
+            if (collide(arena, player)) {
+                player.pos.x = originalX; // 戻す
+                return false;
+            }
+            // 接地中に移動したら猶予をリセット
+            if (player.isGrounded) {
+                lockDelayCounter = 0;
+                lockDelayMovesCounter++; // <--- ここでインクリメント
+            }
+            return true;
+        }
+
+        const pieceShapes = {
+            'T': [[0,1,0],[1,1,1],[0,0,0]],
+            'O': [[1,1],[1,1]],
+            'L': [[0,0,1],[1,1,1],[0,0,0]],
+            'J': [[1,0,0],[1,1,1],[0,0,0]],
+            'S': [[0,1,1],[1,1,0],[0,0,0]],
+            'Z': [[1,1,0],[0,1,1],[0,0,0]],
+            'I': [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]]
+        };
+
+        function createPiece(type) {
+            return pieceShapes[type].map(row => [...row]);
+        }
+        let nextPieceBag = [];
+        function fillBag() {
+            const types = 'TJLOSZI'.split('');
+            for (let i = types.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [types[i], types[j]] = [types[j], types[i]];
+            }
+            nextPieceBag = types;
+        }
+
+        function getNextPieceType() {
+            if (nextPieceBag.length === 0) {
+                fillBag();
+            }
+            return nextPieceBag.shift();
+        }
+
+        function isArenaEmpty() {
+            for (let y = 0; y < arena.length; y++) {
+                for (let x = 0; x < arena[y].length; x++) {
+                    if (arena[y][x] !== 0) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function arenaSweep() {
+            let rowCount = 0;
+            outer: for (let y = arena.length - 1; y >= 0; --y) {
+                for (let x = 0; x < arena[y].length; ++x) {
+                    if (arena[y][x] === 0) {
+                        continue outer;
+                    }
+                }
+                const row = arena.splice(y, 1)[0].fill(0);
+                arena.unshift(row);
+                y++;
+                rowCount++;
+            }
+
+            if (rowCount > 0) {
+                combo++;
+                if (combo > maxCombo) {
+                    maxCombo = combo;
+                }
+            } else {
+                combo = -1;
+            }
+
+            // Perfect Clear判定
+            // 行が削除され、かつアリーナが完全に空になった場合
+            if (rowCount > 0 && isArenaEmpty()) {
+                perfectClearBonus = true;
+            } else {
+                perfectClearBonus = false;
+            }
+
+            return rowCount;
+        }
+
+        function calculateScore(lines) {
+            let baseScore = 0;
+            let comboBonus = 0;
+            let tSpinBonus = 0;
+            let difficultyMultiplier = 1;
+
+            // 難易度による倍率を調整
+            if (currentDifficulty === 'easy') {
+                difficultyMultiplier = 0.7; // ちょっと下げる
+            } else if (currentDifficulty === 'normal') {
+                difficultyMultiplier = 1.1; // ちょっと上げる
+            } else if (currentDifficulty === 'hard') {
+                difficultyMultiplier = 1.5; // さらに上げる
+            }
+
+            if (player.isTSpin) {
+                if (lines === 1) tSpinBonus = 800; // T-Spin Single
+                else if (lines === 2) tSpinBonus = 1200; // T-Spin Double
+                else if (lines === 3) tSpinBonus = 1600; // T-Spin Triple
+            }
+            player.isTSpin = false; // 判定後リセット
+
+            if (tSpinBonus === 0) { // T-Spinではない場合
+                if (lines === 1) baseScore = 100;
+                else if (lines === 2) baseScore = 300;
+                else if (lines === 3) baseScore = 500;
+                else if (lines === 4) baseScore = 800; // Tetris
+            }
+
+            if (combo > 0) {
+                comboBonus = combo * 50;
+            }
+
+            let totalScore = (baseScore + comboBonus + tSpinBonus) * difficultyMultiplier;
+
+            // Perfect Clearボーナスを調整
+            if (perfectClearBonus) {
+                let pcBonus = 0;
+                if (lines === 1) pcBonus = 1000; // PC Single
+                else if (lines === 2) pcBonus = 1500; // PC Double
+                else if (lines === 3) pcBonus = 2000; // PC Triple
+                else if (lines === 4) pcBonus = 3000; // PC Tetris
+                totalScore += pcBonus;
+                console.log("Perfect Clear! Bonus: " + pcBonus);
+            }
+
+            score += Math.round(totalScore); // スコアは整数に丸める
+            scoreElem.textContent = `スコア: ${score}`;
+        }
+
+
+        function getGhostPosition(player) {
+            if (!player.matrix) return player.pos;
+
+            const ghost = {
+                pos: { x: player.pos.x, y: player.pos.y },
+                matrix: player.matrix
+            };
+            let ghostY = player.pos.y;
+            while (true) {
+                ghost.pos.y = ghostY + 1;
+                if (collide(arena, ghost)) {
+                    ghost.pos.y = ghostY;
+                    break;
+                }
+                ghostY++;
+            }
+            return ghost.pos;
+        }
+
+        function drawAll() {
+            context.fillStyle = '#fff';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            arena.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        context.fillStyle = colors[value];
+                        context.strokeStyle = colors['border'];
+                        context.lineWidth = 0.03;
+                        context.fillRect(x, y, 1, 1);
+                        context.strokeRect(x, y, 1, 1);
+                    }
+                });
+            });
+
+            if (player.matrix && player.type) {
+                const ghostPos = getGhostPosition(player);
+                drawMatrix(player.matrix, ghostPos, context, 'ghost', 0.4);
+                drawMatrix(player.matrix, player.pos, context, player.type);
+            }
+
+            nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            for (let i = 0; i < nextPieces.length; i++) {
+                const pieceType = nextPieces[i].type;
+                const pieceMatrix = createPiece(pieceType);
+                const xOffset = (nextCanvas.width / 20 / 2) - (pieceMatrix[0].length / 2);
+                const yOffset = i * 4 + (4 - pieceMatrix.length) / 2;
+                drawMatrix(pieceMatrix, {x: xOffset, y: yOffset}, nextCtx, pieceType);
+            }
+
+            holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+            if (hold.matrix && hold.type) {
+                const xOffset = (holdCanvas.width / 20 / 2) - (hold.matrix[0].length / 2);
+                const yOffset = (holdCanvas.height / 20 / 2) - (hold.matrix.length / 2);
+                drawMatrix(hold.matrix, {x: xOffset, y: yOffset}, holdCtx, hold.type);
+            }
+        }
+
+        let nextPieces = [];
+
+        function playerReset() {
+            player.type = nextPieces[0].type;
+            player.matrix = createPiece(player.type);
+            player.rotState = 0;
+
+            // ゲームオーバーラインの調整: ミノの初期位置をY=0から開始
+            player.pos.y = 0; 
+            player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+
+            nextPieces.shift();
+            nextPieces.push({type: getNextPieceType()});
+
+            // ゲームオーバー判定: 新しいピースが出現時に衝突したらゲームオーバー
+            // 修正：初期位置をy=2にしているので、y=0での衝突ではなく、ピースの最上部がアリーナの上端に触れるかどうかで判断
+            // つまり、player.pos.yが0より上にあったとしても、ピース自体がアリーナの有効範囲外に位置しているかどうか
+            if (collide(arena, player)) {
+                cancelAnimationFrame(animationFrameId);
+                arena.forEach(row => row.fill(0));
+
+                player.matrix = null;
+                player.type = null;
+
+                stopSoftDrop();
+                showGameOverModal(score, linesCleared);
+
+                currentScoreAtGameOver = score;
+                currentLinesClearedAtGameOver = linesCleared;
+                currentMaxComboAtGameOver = maxCombo;
+
+                score = 0;
+                linesCleared = 0;
+                combo = -1;
+                maxCombo = 0;
+                scoreElem.textContent = `スコア: ${score}`;
+                hold.matrix = null;
+                hold.type = null;
+                hold.rotState = 0;
+            }
+            player.isGrounded = false; // 新しいピースなので接地状態をリセット
+            lockDelayCounter = 0;
+            lockDelayMovesCounter = 0;
+        }
+
+        function holdPiece() {
+            if (isPaused) return;
+            if (!canHold) return;
+
+            const currentPieceType = player.type;
+            const currentPieceMatrix = player.matrix.map(row => [...row]);
+            const currentPieceRotState = player.rotState;
+
+            let pieceToPlaceType;
+            let pieceToPlaceMatrix;
+            let pieceToPlaceRotState;
+
+            if (!hold.matrix) {
+                hold.type = currentPieceType;
+                hold.matrix = currentPieceMatrix;
+                hold.rotState = currentPieceRotState;
+
+                playerReset();
+            } else {
+                pieceToPlaceType = hold.type;
+                pieceToPlaceMatrix = hold.matrix.map(row => [...row]);
+                pieceToPlaceRotState = hold.rotState;
+
+                hold.type = currentPieceType;
+                hold.matrix = currentPieceMatrix;
+                hold.rotState = currentPieceRotState;
+
+                player.type = pieceToPlaceType;
+                player.matrix = pieceToPlaceMatrix;
+                player.rotState = pieceToPlaceRotState;
+
+                // ホールド後のピースの初期位置もy=2から開始
+                player.pos.y = 2; 
+                player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+
+                if (collide(arena, player)) {
+                    // ホールドしたピースがすぐに衝突する場合、元の状態に戻す
+                    player.type = currentPieceType;
+                    player.matrix = currentPieceMatrix;
+                    player.rotState = currentPieceRotState;
+                    player.pos.y = 2; // 初期位置に戻す
+                    player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+
+                    hold.type = pieceToPlaceType;
+                    hold.matrix = pieceToPlaceMatrix;
+                    hold.rotState = pieceToPlaceRotState;
+                    return; // ホールド失敗
+                }
+            }
+            canHold = false;
+            player.isTSpin = false;
+            player.isGrounded = false; // ホールドしたら接地状態をリセット
+            lockDelayCounter = 0;
+            lockDelayMovesCounter = 0;
+        }
+
+        let dropCounter = 0;
+        let dropInterval = 1000; // デフォルトの落下間隔
+        let lastTime = 0;
+        let canHold = true;
+        let animationFrameId;
+        let isPaused = false;
+
+        const arena = createMatrix(10, 20);
+        const player = { pos: {x: 0, y: 0}, matrix: null, type: null, isTSpin: false, rotState: 0, isGrounded: false }; // isGroundedを追加
+        const hold = { matrix: null, type: null, rotState: 0 };
+
+        // 接地猶予に関する設定
+        const lockDelayTime = 500; // 500ミリ秒の猶予
+        const lockDelayMoves = 4; // 接地中に許容される操作回数
+        let lockDelayCounter = 0;
+        let lockDelayMovesCounter = 0;
+
+        function setDropIntervalByDifficulty(difficulty) {
+            switch (difficulty) {
+                case 'easy':
+                    dropInterval = 1200; // 遅い
+                    break;
+                case 'normal':
+                    dropInterval = 600; // ふつう (少し速く)
+                    break;
+                case 'hard':
+                    dropInterval = 300; // むずかしい (かなり速く)
+                    break;
+                default:
+                    dropInterval = 800;
+            }
+            console.log(`難易度: ${difficulty}, 落下間隔: ${dropInterval}ms`);
+        }
+
+        function initGame() {
+            arena.forEach(row => row.fill(0));
+            score = 0;
+            linesCleared = 0;
+            combo = -1;
+            maxCombo = 0;
+            player.isTSpin = false;
+            player.rotState = 0;
+            perfectClearBonus = false;
+
+            scoreElem.textContent = `スコア: ${score}`;
+            hold.matrix = null;
+            hold.type = null;
+            hold.rotState = 0;
+            nextPieces = [];
+            fillBag();
+
+            for(let i = 0; i < 3; i++) {
+                nextPieces.push({type: getNextPieceType()});
+            }
+
+            // initGameでもplayerResetを呼び出すように変更
+            playerReset(); // これにより、初期ピースがy=2から出現する
+
+            canHold = true;
+            dropCounter = 0;
+            lastTime = 0;
+
+            stopSoftDrop();
+            
+            // 接地猶予関連の変数を初期化
+            player.isGrounded = false;
+            lockDelayCounter = 0;
+            lockDelayMovesCounter = 0;
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            isPaused = false;
+            pauseButton.style.display = 'block';
+            animationFrameId = requestAnimationFrame(update);
+        }
+
+        function update(time = 0) {
+            if (isPaused) {
+                cancelAnimationFrame(animationFrameId);
+                return;
+            }
+
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            // 通常の自動落下
+            if (!softDropInterval) {
+                dropCounter += deltaTime;
+                if (dropCounter > dropInterval) {
+                    const landed = playerDrop(); // 落下を試みる
+
+                    // 接地猶予の処理
+                    if (landed) { // 接地している場合
+                        lockDelayCounter += deltaTime;
+                        // 猶予時間超過、または操作回数制限を超えたら固定
+                        if (lockDelayCounter >= lockDelayTime || lockDelayMovesCounter >= lockDelayMoves) {
+                            merge(arena, player);
+                            const linesClearedThisDrop = arenaSweep();
+                            linesCleared += linesClearedThisDrop;
+                            calculateScore(linesClearedThisDrop);
+                            playerReset();
+                            canHold = true;
+                            player.isTSpin = false; // 次のピースではT-Spinではない
+                        }
+                    } else { // 落下中の場合
+                        dropCounter %= dropInterval; // 落下しない限りタイマーはリセット
+                        player.isGrounded = false; // 落下しているので接地ではない
+                        lockDelayCounter = 0; // 猶予タイマーリセット
+                        lockDelayMovesCounter = 0; // 操作回数リセット
+                    }
+                }
+            } else {
+                // ソフトドロップ中はplayerDrop()が別途呼ばれているため、
+                // 接地猶予の固定ロジックはソフトドロップ内で管理しない
+                // （連続落下のため）
+            }
+
+            drawAll();
+
+            animationFrameId = requestAnimationFrame(update);
+        }
+
+        // --- 一時停止機能 ---
+        function togglePause() {
+            isPaused = !isPaused;
+            if (isPaused) {
+                cancelAnimationFrame(animationFrameId);
+                stopSoftDrop();
+                pauseOverlay.style.display = 'flex';
+                pauseButton.style.display = 'none';
+            } else {
+                pauseOverlay.style.display = 'none';
+                pauseButton.style.display = 'block';
+                animationFrameId = requestAnimationFrame(update);
+            }
+        }
+
+        function resumeGame() {
+            togglePause();
+        }
+
+        function endGame() {
+            const confirmEnd = confirm("ゲームを終了してメインメニューに戻りますか？現在のスコアは保存されません。");
+            if (confirmEnd) {
+                hideGameOverModalAndShowMenu();
+                score = 0;
+                linesCleared = 0;
+                combo = -1;
+                maxCombo = 0;
+                scoreElem.textContent = `スコア: ${score}`;
+                hold.matrix = null;
+                hold.type = null;
+                hold.rotState = 0;
+                nextPieces = [];
+                isPaused = false;
+                pauseButton.style.display = 'none';
+                pauseOverlay.style.display = 'none';
+            }
+        }
+
+
+
+        // --- ゲームオーバーモーダル関連 ---
+        const gameOverOverlay = document.getElementById('game-over-overlay');
+        const finalScoreDisplay = document.getElementById('final-score-display');
+        const linesClearedDisplay = document.getElementById('lines-cleared-display');
+        const maxComboDisplay = document.getElementById('max-combo-display');
+
+        let currentScoreAtGameOver = 0;
+        let currentLinesClearedAtGameOver = 0;
+        let currentMaxComboAtGameOver = 0;
+
+        function showGameOverModal(finalScore, finalLinesCleared) {
+            currentScoreAtGameOver = finalScore;
+            currentLinesClearedAtGameOver = finalLinesCleared;
+            currentMaxComboAtGameOver = maxCombo;
+
+            finalScoreDisplay.textContent = `スコア: ${finalScore}`;
+            linesClearedDisplay.textContent = `消したライン数: ${finalLinesCleared}`;
+            maxComboDisplay.textContent = `最大連鎖数: ${currentMaxComboAtGameOver}`;
+            gameOverOverlay.style.display = 'flex';
+            pauseButton.style.display = 'none';
+        }
+
+        function hideGameOverModalAndShowMenu() {
+            gameOverOverlay.style.display = 'none';
+            pauseOverlay.style.display = 'none';
+            showModeSelection(); // メインメニューに戻る
+        }
+
+
+        // --- UI要素の取得 ---
+        const overlay = document.getElementById('overlay');
+        const modeSelectionModal = document.getElementById('mode-selection-modal');
+        const btnModeButton = document.getElementById('btn-mode-button');
+        const btnModeGesture = document.getElementById('btn-mode-gesture');
+        const btnShowRankingFromMain = document.getElementById('btn-show-ranking-from-main');
+
+        const difficultySelectionOverlay = document.getElementById('difficulty-selection-overlay');
+        const difficultySelectionModal = document.getElementById('difficulty-selection-modal');
+        const btnDifficultyEasy = document.getElementById('btn-difficulty-easy');
+        const btnDifficultyNormal = document.getElementById('btn-difficulty-normal');
+        const btnDifficultyHard = document.getElementById('btn-difficulty-hard');
+        const btnBackToModeSelection = document.getElementById('btn-back-to-mode-selection');
+
+        const uiButtons = document.getElementById('ui');
+        const tetrisCanvas = document.getElementById('tetris');
+        const holdArea = document.getElementById('hold');
+
+
+        // --- 画面表示制御関数 ---
+        function showModeSelection() {
+            overlay.style.display = 'flex';
+            modeSelectionModal.style.display = 'block';
+            difficultySelectionOverlay.style.display = 'none';
+            rankingOverlay.style.display = 'none';
+            gameOverOverlay.style.display = 'none';
+            pauseOverlay.style.display = 'none';
+            uiButtons.style.display = 'none'; // ゲーム中のボタンUIを非表示
+            pauseButton.style.display = 'none'; // ポーズボタンを非表示
+            detachControlEventListeners(); // メニュー表示中はゲーム操作リスナーを無効化
+        }
+
+        function showDifficultySelection() {
+            overlay.style.display = 'none'; // 操作モード選択を非表示
+            difficultySelectionOverlay.style.display = 'flex'; // 難易度選択を表示
+        }
+
+        function startGame() {
+            difficultySelectionOverlay.style.display = 'none'; // 難易度選択を非表示
+            overlay.style.display = 'none'; // メインメニューも非表示
+            
+            // 修正: ジェスチャーモードでも常にボタンUIを表示
+            uiButtons.style.display = 'grid'; 
+            
+            initGame(); // ゲーム開始
+        }
+
+        // --- イベントリスナー設定 ---
+        btnModeButton.addEventListener('click', () => {
+            currentControlMode = 'button';
+            showDifficultySelection();
+        });
+
+        btnModeGesture.addEventListener('click', () => {
+            currentControlMode = 'gesture';
+            showDifficultySelection();
+        });
+
+
+
+        btnDifficultyEasy.addEventListener('click', () => {
+            currentDifficulty = 'easy';
+            setDropIntervalByDifficulty(currentDifficulty);
+            startGame();
+        });
+
+        btnDifficultyNormal.addEventListener('click', () => {
+            currentDifficulty = 'normal';
+            setDropIntervalByDifficulty(currentDifficulty);
+            startGame();
+        });
+
+        btnDifficultyHard.addEventListener('click', () => {
+            currentDifficulty = 'hard';
+            setDropIntervalByDifficulty(currentDifficulty);
+            startGame();
+        });
+
+        btnBackToModeSelection.addEventListener('click', showModeSelection);
+
+
+        // --- キーボード入力ハンドラー ---
+        function handleKeyboardInput(event) {
+            if (isPaused && event.key !== 'p' && event.key !== 'P' && event.key !== 'Escape') return;
+            if (event.key === 'ArrowLeft') playerMove(-1);
+            else if (event.key === 'ArrowRight') playerMove(1);
+            else if (event.key === 'ArrowDown') startSoftDrop();
+            else if (event.key === 'ArrowUp') hardDrop();
+            else if (event.key === 'c' || event.key === 'C') holdPiece();
+            else if (event.key === 'z' || event.key === 'Z') playerRotate(false);
+            else if (event.key === 'x' || event.key === 'X') playerRotate(true);
+            else if (event.key === 'p' || event.key === 'P' || event.key === 'Escape') togglePause();
+        }
+
+        function handleKeyboardInputUp(event) {
+            if (event.key === 'ArrowDown') {
+                stopSoftDrop();
+            }
+        }
+
+        // --- タッチジェスチャー関連 ---
+        let startX = 0;
+        let startY = 0;
+        let lastMoveTime = 0;
+        const moveDebounceTime = 100;
+        let lastProcessedTouchX = 0;
+        let lastProcessedTouchY = 0;
+
+        const lateralMoveThreshold = 30;
+        const hardDropSwipeThreshold = 50;
+        const softDropSwipeThreshold = 30;
+        const rotationTapThreshold = 10;
+
+
+        function handleTouchStart(event) {
+            if (currentControlMode !== 'gesture' || isPaused) return;
+
+            event.preventDefault(); // スクロール防止
+            startX = event.touches[0].clientX;
+            startY = event.touches[0].clientY;
+            lastProcessedTouchX = startX;
+            lastProcessedTouchY = startY;
+
+            stopSoftDrop();
+        }
+
+        function handleTouchMove(event) {
+            if (currentControlMode !== 'gesture' || isPaused) return;
+
+            event.preventDefault(); // スクロール防止
+            const currentTime = Date.now();
+            const currentX = event.touches[0].clientX;
+            const currentY = event.touches[0].clientY;
+
+            const deltaXSinceStart = currentX - startX;
+            const deltaYSinceStart = currentY - startY;
+
+            // 横移動の処理（デバウンスを適用）
+            if (currentTime - lastMoveTime > moveDebounceTime) {
+                const diffX = currentX - lastProcessedTouchX;
+                if (Math.abs(diffX) > lateralMoveThreshold / 2) {
+                    const dir = (diffX > 0) ? 1 : -1;
+                    if (playerMove(dir)) {
+                        lastProcessedTouchX = currentX;
+                        lastMoveTime = currentTime;
+                    }
+                }
+            }
+
+            // ソフトドロップの開始
+            // 下方向へのある程度の移動でソフトドロップ開始
+            if (deltaYSinceStart > softDropSwipeThreshold && Math.abs(deltaYSinceStart) > Math.abs(deltaXSinceStart)) {
+                startSoftDrop();
+            } else if (deltaYSinceStart <= 0 && softDropInterval) { // 上方向への移動や横方向の移動が大きくなった場合にソフトドロップを停止
+                stopSoftDrop();
+            }
+        }
+
+        function handleTouchEnd(event) {
+            if (currentControlMode !== 'gesture' || isPaused) return;
+
+            stopSoftDrop(); // 指を離したらソフトドロップを停止
+
+            const endX = event.changedTouches[0].clientX;
+            const endY = event.changedTouches[0].clientY;
+
+            const deltaX = endX - startX;
+            const deltaY = endY - startY;
+
+            // 上方向へのスワイプでハードドロップ
+            if (deltaY < -hardDropSwipeThreshold && Math.abs(deltaY) > Math.abs(deltaX)) {
+                hardDrop();
+            }
+            // 短いタップで回転 (移動量が小さい場合)
+            else if (Math.abs(deltaX) < rotationTapThreshold && Math.abs(deltaY) < rotationTapThreshold) {
+                const rect = tetrisCanvas.getBoundingClientRect();
+                const touchX = endX - rect.left;
+
+                if (touchX < rect.width / 2) {
+                    playerRotate(false); // 左半分をタップで左回転
+                } else {
+                    playerRotate(true); // 右半分をタップで右回転
+                }
+            }
+        }
+
+        function handleHoldTouch(event) {
+            if (currentControlMode !== 'gesture' || isPaused) return;
+            event.preventDefault();
+            holdPiece();
+        }
+        
+        // --- イベントリスナーの登録と解除を管理する関数 ---
+        function attachControlEventListeners() {
+            document.addEventListener('keydown', handleKeyboardInput);
+            document.addEventListener('keyup', handleKeyboardInputUp);
+
+            // ジェスチャーモードの場合のみタッチイベントリスナーを登録
+            if (currentControlMode === 'gesture') {
+                tetrisCanvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+                tetrisCanvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+                tetrisCanvas.addEventListener('touchend', handleTouchEnd);
+                holdArea.addEventListener('touchstart', handleHoldTouch, { passive: false }); // HOLDボタンもタッチイベントを有効に
+            }
+        }
+
+        function detachControlEventListeners() {
+            document.removeEventListener('keydown', handleKeyboardInput);
+            document.removeEventListener('keyup', handleKeyboardInputUp);
+
+            tetrisCanvas.removeEventListener('touchstart', handleTouchStart);
+            tetrisCanvas.removeEventListener('touchmove', handleTouchMove);
+            tetrisCanvas.removeEventListener('touchend', handleTouchEnd);
+            holdArea.removeEventListener('touchstart', handleHoldTouch);
+        }
+
+        // `initGame`の変更: ゲーム開始時にコントロールイベントリスナーを再登録する
+        const originalInitGame = initGame;
+        initGame = () => {
+            // ゲーム開始前に既存のイベントリスナーを全て解除
+            detachControlEventListeners(); 
+            // 元の初期化処理
+            originalInitGame(); 
+            // 新しい（選択されたモードに応じた）イベントリスナーを登録
+            attachControlEventListeners(); 
+        };
+
+        // 初期表示はモード選択画面
+        showModeSelection();
+    </script>
+</body>
+</html>
