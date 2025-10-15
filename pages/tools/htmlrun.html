@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>オンライン HTML エディタ (URLパラメーター対応 - 修正版)</title>
+    <title>オンライン HTML エディタ (安定版)</title>
     <style>
         /* --- CSS スタイル --- */
         body {
@@ -74,6 +74,12 @@
             margin-top: 5px;
         }
 
+        /* プレビューエリアのiframeの親要素 */
+        #preview-container {
+            width: 100%;
+            height: calc(100% - 30px); /* H2タグの高さを考慮 */
+        }
+
         iframe {
             width: 100%;
             height: 100%;
@@ -90,7 +96,7 @@
 <body>
 
     <header>
-        <h1>オンライン HTML エディタ (URLパラメーター対応)</h1>
+        <h1>オンライン HTML エディタ (安定版)</h1>
     </header>
 
     <div class="container">
@@ -106,49 +112,50 @@
 
         <div class="pane" id="preview-pane">
             <h2>プレビュー</h2>
-            <iframe id="preview"></iframe>
+            <div id="preview-container">
+                </div>
         </div>
     </div>
 
     <script>
         /**
-         * テキストエリアのコードを取得し、iframeで実行結果を表示します。
+         * テキストエリアのコードを取得し、新しいiframeで実行結果を表示します。
          */
         function runCode() {
             const code = document.getElementById('htmlCode').value;
             const params = document.getElementById('urlParameters').value.trim();
+            const previewContainer = document.getElementById('preview-container');
 
-            const iframe = document.getElementById('preview');
-            const iframeDoc = iframe.contentWindow.document;
+            // 1. 古い iframe を完全に削除し、新しい iframe を作成
+            previewContainer.innerHTML = '';
+            const newIframe = document.createElement('iframe');
+            newIframe.id = 'preview';
+            previewContainer.appendChild(newIframe);
+
+            const iframeDoc = newIframe.contentWindow.document;
 
             iframeDoc.open();
 
-            // 1. URLパラメーターのシミュレーションのためのJavaScriptコードを生成
-            // ユーザーコードが簡単に使えるように、"simulatedUrl" と "simulatedSearchParams" を定義します。
+            // 2. URLパラメーターのシミュレーションのためのJavaScriptコードを生成
             let simulatedUrl = '';
             let actualParams = params.startsWith('?') ? params : (params.length > 0 ? '?' + params : '');
             simulatedUrl = 'http://localhost/' + actualParams;
             
             // iframe内のJavaScriptで実行されるシミュレーションコード
+            // window.simulatedSearchParams と window.getLocationSearch() を定義
             const simulationScript = `
                 <script>
-                    // URLSearchParamsを直接使えるように、iframeのグローバルスコープに定義
                     const _simulatedUrl = "${simulatedUrl}";
                     const _currentUrl = new URL(_simulatedUrl);
                     window.simulatedSearchParams = _currentUrl.searchParams;
                     
-                    // (旧ブラウザ対応のため、window.URLSearchParams も定義しておくと安全ですが、ここでは省略)
-                    
-                    // location.search を直接参照したい場合のために、
-                    // locationオブジェクトを完全に偽装する代わりに、値を参照できるようにします。
                     window.getLocationSearch = function() {
                         return "${actualParams}";
                     };
                 <\/script>
             `;
             
-            // 2. iframeにコードを書き込み
-            // シミュレーションスクリプトをユーザーのコードの前に挿入します。
+            // 3. iframeにコードを書き込み
             iframeDoc.write(simulationScript + code);
 
             iframeDoc.close();
@@ -174,7 +181,6 @@
 
     <script>
         // runCode関数で設定されたグローバル変数を使用
-        // (注: location.search は iframe のURLを参照するため、ここではカスタム変数を使用します)
         const params = window.simulatedSearchParams;
 
         if (params) {
