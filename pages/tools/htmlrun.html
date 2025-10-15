@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オンライン HTML エディタ (URLパラメーター対応)</title>
+    <style>
+        /* --- CSS スタイル (変更なし) --- */
+        body {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .pane {
+            flex: 1;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+
+        #editor-pane {
+            border-right: 1px solid #ccc;
+            display: flex; /* Flexboxを追加 */
+            flex-direction: column; /* 縦方向に配置 */
+        }
+
+        .parameter-input {
+            margin-bottom: 10px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+
+        .parameter-input label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .parameter-input input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+        }
+
+        textarea {
+            width: 100%;
+            flex-grow: 1; /* 残りのスペースを埋める */
+            padding: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            resize: none;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            outline: none;
+            margin-top: 5px;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: white;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>オンライン HTML エディタ (URLパラメーター対応)</h1>
+    </header>
+
+    <div class="container">
+        <div class="pane" id="editor-pane">
+            <div class="parameter-input">
+                <label for="urlParameters">URLパラメーター (例: ?name=Taro&age=30)</label>
+                <input type="text" id="urlParameters" value="?user=ゲスト" oninput="runCode()">
+            </div>
+
+            <h2>HTMLコード入力</h2>
+            <textarea id="htmlCode" oninput="runCode()" placeholder="ここにHTML、CSS、JavaScriptを入力してください..."></textarea>
+        </div>
+
+        <div class="pane" id="preview-pane">
+            <h2>プレビュー</h2>
+            <iframe id="preview"></iframe>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * テキストエリアのコードを取得し、iframeで実行結果を表示します。
+         */
+        function runCode() {
+            const code = document.getElementById('htmlCode').value;
+            const params = document.getElementById('urlParameters').value.trim(); // URLパラメーターを取得
+
+            const iframe = document.getElementById('preview');
+            const iframeDoc = iframe.contentWindow.document;
+
+            iframeDoc.open();
+
+            // 1. URLパラメーターのシミュレーション
+            // 実行されるコードの冒頭に、URLパラメーターをシミュレートするJavaScriptコードを追加します。
+            let simulatedUrl = '';
+            if (params.startsWith('?')) {
+                // ? で始まっている場合はそのまま
+                simulatedUrl = 'http://localhost/' + params;
+            } else if (params.length > 0) {
+                 // ? がない場合は追加
+                 simulatedUrl = 'http://localhost/?' + params;
+            } else {
+                 // 空の場合はベースURLのみ
+                 simulatedUrl = 'http://localhost/';
+            }
+            
+            // 実行するiframe内のJavaScriptに、URLを偽装するコードを挿入します。
+            const scriptToSimulateParams = `
+                <script>
+                    // 実行されるHTML内で、location.search や new URL(location.href) が機能するように偽装します。
+                    // ただし、完全なlocationオブジェクトの偽装は複雑なため、
+                    // ここでは新しいURLオブジェクトを作成し、それをiframe内のJavaScriptからアクセスできるようにします。
+                    const _simulatedUrl = "${simulatedUrl}";
+                    const _currentUrl = new URL(_simulatedUrl);
+                    
+                    // ユーザーコードがURLSearchParamsを簡単に使えるようにグローバルに設定
+                    window.simulatedSearchParams = _currentUrl.searchParams;
+
+                    // location.searchを直接上書きするのはセキュリティ上の制限で難しい場合があるため、
+                    // ユーザーに "simulatedSearchParams" の使用を促すのが現実的です。
+                    
+                    // (デバッグ用) console.log("Simulated URL:", _simulatedUrl);
+                <\/script>
+            `;
+            
+            // 2. iframeにコードを書き込み
+            // パラメーターシミュレーションスクリプトをユーザーのコードの前に挿入します。
+            iframeDoc.write(scriptToSimulateParams + code);
+
+            iframeDoc.close();
+        }
+
+        // ページロード時に実行される初期設定
+        window.onload = function() {
+            // パラメーターを読み取るサンプルコード
+            const initialCode = `<!DOCTYPE html>
+<html>
+<head>
+    <title>パラメーターテスト</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .result { color: darkgreen; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>URLパラメーターのテスト</h1>
+    <p>URLパラメーター入力欄に <code>?name=Alice&id=123</code> などと入力してください。</p>
+
+    <div id="output"></div>
+
+    <script>
+        // runCode関数で設定されたグローバル変数を使用
+        const params = window.simulatedSearchParams;
+
+        if (params) {
+            const name = params.get('name') || '名無し';
+            const id = params.get('id') || 'IDなし';
+
+            document.getElementById('output').innerHTML = 
+                '<p>パラメーターから取得した値:</p>' +
+                '<ul>' +
+                '<li>name: <span class="result">' + name + '</span></li>' +
+                '<li>id: <span class="result">' + id + '</span></li>' +
+                '</ul>';
+        } else {
+            document.getElementById('output').textContent = 'パラメーターのシミュレーションに失敗しました。';
+        }
+    <\/script>
+</body>
+</html>`;
+
+            document.getElementById('htmlCode').value = initialCode;
+            // 初期のコードを一度実行
+            runCode();
+        };
+
+    </script>
+</body>
+</html>
