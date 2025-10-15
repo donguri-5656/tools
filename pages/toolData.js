@@ -17,7 +17,7 @@ const allToolData = [
         tools: [
             { id: 'tool-color', name: 'カラーピッカー', url: '/tools/color.html', description: '画面上の色やコードから色を選択・変換。', keywords: 'カラーピッカー 色 コード HEX RGB デザイン', kana: 'からーぴっかーからー' },
             { id: 'tool-resize', name: '画像サイズ変更', url: '/tools/resize.html', description: '画像の縦横比を維持してリサイズ。', keywords: '画像 サイズ 変更 リサイズ 縮小', kana: 'がぞうさいずへんこうがぞう' },
-            { id: 'tool-pdf', name: 'PDF結合・分割', url: '/tools/pdf.html', description: '複数のPDFファイルをまとめたり、分割したり。', keywords: 'PDF 結合 分割 ファイル 編集', kana: 'ぴーでぃーえふけつごうぶんかつぴーでぃーえふ' },
+            { id: 'tool-pdf', name: 'html実行', url: '/tools/htmlrun.html', description: 'htmlを実行可能。。', keywords: 'html 実行　編集', kana: '実行　編集' },
             { id: 'tool-bgremove', name: '背景透過処理', url: '/tools/bgremove.html', description: '写真から背景を自動で削除。', keywords: '背景 透過 処理 削除 写真', kana: 'はいけいとうかしょりはけい' }
         ]
     },
