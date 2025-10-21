@@ -1233,6 +1233,24 @@
             tetrisCanvas.removeEventListener('touchend', handleTouchEnd);
             holdArea.removeEventListener('touchstart', handleHoldTouch);
         }
+        function endGame() {
+            const confirmEnd = confirm("ゲームを終了してメインメニューに戻りますか？現在のスコアは保存されません。");
+            if (confirmEnd) {
+                hideGameOverModalAndShowMenu();
+                score = 0;
+                linesCleared = 0;
+                combo = -1;
+                maxCombo = 0;
+                scoreElem.textContent = `スコア: ${score}`;
+                hold.matrix = null;
+                hold.type = null;
+                hold.rotState = 0;
+                nextPieces = [];
+                isPaused = false;
+                pauseButton.style.display = 'none';
+                pauseOverlay.style.display = 'none';
+            }
+        }
 
         // `initGame`の変更: ゲーム開始時にコントロールイベントリスナーを再登録する
         const originalInitGame = initGame;
